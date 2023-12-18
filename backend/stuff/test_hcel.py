@@ -15,3 +15,4 @@ chain = prompt | model | output_parser
 res = chain.invoke({"topic": "ice cream"})
 
 print(res)
+
