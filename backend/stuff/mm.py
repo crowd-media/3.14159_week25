@@ -5,6 +5,7 @@ from openai import OpenAI
 load_dotenv()
 client = OpenAI()
 
+
 def generate_chat(prompt_filename: str):
     with open(prompt_filename, "r") as config_file:
 

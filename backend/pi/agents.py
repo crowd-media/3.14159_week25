@@ -1,4 +1,4 @@
-from dotenv import load_dotenv  
+from dotenv import load_dotenv
 from langchain.agents.agent import AgentFinish
 
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
@@ -14,10 +14,12 @@ load_dotenv()
 
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
+
 @tool
 def get_word_length(word: str) -> int:
     """Returns the length of a word."""
     return len(word)
+
 
 @tool
 def listen_adversary():
@@ -26,10 +28,8 @@ def listen_adversary():
     return message
 
 
-
-
-tools = [get_word_length,listen_adversary]
-tool_dict = {f.name : f for f in  tools}
+tools = [get_word_length, listen_adversary]
+tool_dict = {f.name: f for f in tools}
 # print(tool_dict)
 # exit()
 chat_history = []
@@ -51,7 +51,7 @@ prompt = ChatPromptTemplate.from_messages(
             
             You should always listen to the adversart. Your preferred action is to
             call `listen_adversary`
-            """
+            """,
         ),
         MessagesPlaceholder(variable_name=MEMORY_KEY),
         ("user", "{input}"),
@@ -61,54 +61,61 @@ prompt = ChatPromptTemplate.from_messages(
 
 llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
 
-agent = (
-    {
-        "input": lambda x: x["input"],
-        AGENT_SCRATCHPAD_KEY: lambda x: format_to_openai_function_messages(
-            x["intermediate_steps"]
-        ),
-        "chat_history": lambda x: x["chat_history"],
-    }
-    | prompt
-    | llm_with_tools
-    | OpenAIFunctionsAgentOutputParser()
-)
 
-# agent.invoke({"input": "how many letters in the word educa?", "intermediate_steps": []})
-# print(a)
-user_input = "how many characters in 'world domination'"
-user_input = "lets have a friendly discussion!"
-intermediate_steps = []
-while True:
-    output = agent.invoke(
+def create_agent():
+    agent = (
         {
-            "input": user_input,
-            "intermediate_steps": intermediate_steps, "chat_history": chat_history
+            "input": lambda x: x["input"],
+            AGENT_SCRATCHPAD_KEY: lambda x: format_to_openai_function_messages(
+                x["intermediate_steps"]
+            ),
+            "chat_history": lambda x: x["chat_history"],
         }
+        | prompt
+        | llm_with_tools
+        | OpenAIFunctionsAgentOutputParser()
     )
-    print(type(output))
-    print(output)
-    if isinstance(output, AgentFinish):
-        chat_history.extend(
-        [
-            HumanMessage(content=user_input),
-            AIMessage(content=output.return_values["output"]),
-        ]
-        )
+    return agent
 
-    user_input = input("Please enter a response: ")
-    if user_input == "q":
-        break
-    continue
-    print(output, type(output))
-    if isinstance(output, AgentFinish):
-        final_result = output.return_values["output"]
-        # break
-    else:
-        print(f"TOOL NAME: {output.tool}")
-        print(f"TOOL INPUT: {output.tool_input}")
-        tool_to_run = tool_dict.get(output.tool)
-        # tool_to_run = listen_adversary
-        observation = tool_to_run.run(output.tool_input)
-        intermediate_steps.append((output, observation))
-print(final_result)
+
+if __name__ == "__main__":
+    # agent.invoke({"input": "how many letters in the word educa?", "intermediate_steps": []})
+    # print(a)
+    agent = create_agent()
+    user_input = "how many characters in 'world domination'"
+    user_input = "lets have a friendly discussion!"
+    intermediate_steps = []
+    while True:
+        output = agent.invoke(
+            {
+                "input": user_input,
+                "intermediate_steps": intermediate_steps,
+                "chat_history": chat_history,
+            }
+        )
+        print(type(output))
+        print(output)
+        if isinstance(output, AgentFinish):
+            chat_history.extend(
+                [
+                    HumanMessage(content=user_input),
+                    AIMessage(content=output.return_values["output"]),
+                ]
+            )
+
+        user_input = input("Please enter a response: ")
+        if user_input == "q":
+            break
+        continue
+        print(output, type(output))
+        if isinstance(output, AgentFinish):
+            final_result = output.return_values["output"]
+            # break
+        else:
+            print(f"TOOL NAME: {output.tool}")
+            print(f"TOOL INPUT: {output.tool_input}")
+            tool_to_run = tool_dict.get(output.tool)
+            # tool_to_run = listen_adversary
+            observation = tool_to_run.run(output.tool_input)
+            intermediate_steps.append((output, observation))
+    print(final_result)
