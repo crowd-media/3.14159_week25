@@ -1,2 +1,4 @@
-langchain
-fastapi[all]
+langchain==0.0.350
+fastapi[all]==0.105.0
+openai==1.5.0
+python-dotenv==1.0.0
