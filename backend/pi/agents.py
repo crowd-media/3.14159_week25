@@ -1,16 +1,28 @@
-from dotenv import load_dotenv
-from langchain.agents.agent import AgentFinish
+from typing import Any
+from typing import Dict
+from typing import List
+from operator import itemgetter
 
+from dotenv import load_dotenv
+
+from langchain.agents import tool
+from langchain.agents.agent import AgentFinish
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
-from langchain.tools.render import format_tool_to_openai_function
 from langchain.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.agents import tool
+from langchain.memory import ConversationSummaryBufferMemory
+from langchain.prompts import ChatPromptTemplate
 from langchain.prompts import MessagesPlaceholder
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain.agents import AgentExecutor
-from langchain.memory import ConversationBufferMemory
+from langchain.prompts import MessagesPlaceholder
+from langchain.tools.render import format_tool_to_openai_function
+
+from langchain_core.messages import AIMessage
+from langchain_core.messages import HumanMessage
+from langchain_core.messages import SystemMessage
+from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnableSequence
+
 
 load_dotenv()
 
@@ -23,67 +35,98 @@ def get_word_length(word: str) -> int:
     return len(word)
 
 
-# @tool
-# def listen_adversary():
-#     """Returns the adversary answer. Always listen to the adversary."""
-#     message = input("Please enter a response: ")
-#     return message
-
-
+# can add more tools here, they will be available to the agent
 tools = [get_word_length]
-tool_dict = {t.name: t for t in tools}
-# print(tool_dict)
 
-chat_history = []
+tool_dict = {f.name: f for f in tools}
 
 MEMORY_KEY = "chat_history"
 AGENT_SCRATCHPAD_KEY = "agent_scratchpad"
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            # "You are very powerful assistant, but bad at calculating lengths of words.",
-            """You are an amazing debater.
 
-            You use short sentences always, not exceeding 50 words.
 
-            Counterargument whatever is thrown to you.
+def create_prompt(sys_prompt: str):
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                sys_prompt,
+            ),
+            MessagesPlaceholder(variable_name=MEMORY_KEY),
+            ("user", "{input}"),
+            MessagesPlaceholder(variable_name=AGENT_SCRATCHPAD_KEY),
+        ]
+    )
 
-            Use the tool listen_adversary to listen to my arguments
-            
-            You should always listen to the adversart. Your preferred action is to
-            call `listen_adversary`
-            """,
-        ),
-        ("user", "{input}"),
-        MessagesPlaceholder(variable_name=AGENT_SCRATCHPAD_KEY),
-    ]
-)
 
 llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
 
 
-def create_agent_executor(agent):
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True, memory=memory, max_execution_time=60, max_iterations=50)
+class AiMessageWithID(AIMessage):
+    agent_id: str
 
-def create_agent():
+
+class SharedMemory(ConversationSummaryBufferMemory):
+    def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """Converts a list of messages with id to the point of view of the
+        current agent.
+        """
+        mssages_with_id: List[AiMessageWithID] = super().load_memory_variables(inputs)[
+            MEMORY_KEY
+        ]
+
+        adjusted_messages_by_id = []
+
+        for msg in mssages_with_id:
+            if isinstance(msg, SystemMessage):
+                adjusted_messages_by_id.append(msg)
+                continue
+            if msg.agent_id == inputs.get("agent_id"):
+                adjusted_messages_by_id.append(HumanMessage(content=msg.content))
+            else:
+                adjusted_messages_by_id.append(AIMessage(content=msg.content))
+
+        return {MEMORY_KEY: adjusted_messages_by_id}
+
+    def save_messsage_with_id(self, message: str, agent_id: str):
+        message = AiMessageWithID(content=message, agent_id=agent_id)
+        self.chat_memory.add_message(message)
+
+        self.prune()
+
+
+def handleAgentOutput(agent_id: str, memory: SharedMemory):
+    def _handle(output):
+        if isinstance(output, AgentFinish):
+            memory.save_messsage_with_id(output.return_values["output"], agent_id)
+            return output
+        else:
+            return {
+                "tool": output.tool,
+                "tool_input": output.tool_input,
+            }
+
+    return _handle
+
+
+def create_agent(memory: SharedMemory, agent_id: str, prompt) -> RunnableSequence:
+    agent: RunnableSequence
+    # memory_saver = MemorySaver(memory=memory)
     agent = (
-        {
+        RunnablePassthrough.assign(
+            chat_history=RunnableLambda(memory.load_memory_variables)
+            | itemgetter(MEMORY_KEY)
+        )
+        | {
             "input": lambda x: x["input"],
             AGENT_SCRATCHPAD_KEY: lambda x: format_to_openai_function_messages(
                 x["intermediate_steps"]
-            )
+            ),
+            MEMORY_KEY: lambda x: x[MEMORY_KEY],
+            "_": lambda x: memory.save_messsage_with_id(x["input"], x["agent_id"]),
         }
         | prompt
         | llm_with_tools
         | OpenAIFunctionsAgentOutputParser()
+        | handleAgentOutput(agent_id, memory)
     )
-
-    agent_executor = create_agent_executor(agent)
-    return agent_executor
-
-# def agent_executor():
-    # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-# 
-
+    return agent
