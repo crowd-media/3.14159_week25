@@ -6,10 +6,12 @@ from operator import itemgetter
 from dotenv import load_dotenv
 
 from langchain.agents import tool
+from langchain.agents.agent import AgentExecutor
 from langchain.agents.agent import AgentFinish
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.chat_models import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
 from langchain.memory import ConversationSummaryBufferMemory
 from langchain.prompts import ChatPromptTemplate
 from langchain.prompts import MessagesPlaceholder
@@ -26,7 +28,8 @@ from langchain_core.runnables import RunnableSequence
 
 load_dotenv()
 
-llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+# llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+llm = ChatOpenAI(model="gpt-4", temperature=0)
 
 
 @tool
@@ -108,6 +111,18 @@ def handleAgentOutput(agent_id: str, memory: SharedMemory):
     return _handle
 
 
+def create_agent_executor(agent):
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    return AgentExecutor(
+        agent=agent,
+        tools=tools,
+        verbose=True,
+        memory=memory,
+        max_execution_time=60,
+        max_iterations=50,
+    )
+
+
 def create_agent(memory: SharedMemory, agent_id: str, prompt) -> RunnableSequence:
     agent: RunnableSequence
     # memory_saver = MemorySaver(memory=memory)
@@ -122,11 +137,12 @@ def create_agent(memory: SharedMemory, agent_id: str, prompt) -> RunnableSequenc
                 x["intermediate_steps"]
             ),
             MEMORY_KEY: lambda x: x[MEMORY_KEY],
-            "_": lambda x: memory.save_messsage_with_id(x["input"], x["agent_id"]),
         }
         | prompt
         | llm_with_tools
         | OpenAIFunctionsAgentOutputParser()
         | handleAgentOutput(agent_id, memory)
     )
+    # agent_executor = create_agent_executor(agent)
+    # return agent_executor
     return agent
