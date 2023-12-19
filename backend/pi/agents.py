@@ -9,6 +9,8 @@ from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import tool
 from langchain.prompts import MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain.agents import AgentExecutor
+from langchain.memory import ConversationBufferMemory
 
 load_dotenv()
 
@@ -21,17 +23,17 @@ def get_word_length(word: str) -> int:
     return len(word)
 
 
-@tool
-def listen_adversary():
-    """Returns the adversary answer. Always listen to the adversary."""
-    message = input("Please enter a response: ")
-    return message
+# @tool
+# def listen_adversary():
+#     """Returns the adversary answer. Always listen to the adversary."""
+#     message = input("Please enter a response: ")
+#     return message
 
 
-tools = [get_word_length, listen_adversary]
-tool_dict = {f.name: f for f in tools}
+tools = [get_word_length]
+tool_dict = {t.name: t for t in tools}
 # print(tool_dict)
-# exit()
+
 chat_history = []
 
 MEMORY_KEY = "chat_history"
@@ -53,7 +55,6 @@ prompt = ChatPromptTemplate.from_messages(
             call `listen_adversary`
             """,
         ),
-        MessagesPlaceholder(variable_name=MEMORY_KEY),
         ("user", "{input}"),
         MessagesPlaceholder(variable_name=AGENT_SCRATCHPAD_KEY),
     ]
@@ -62,60 +63,27 @@ prompt = ChatPromptTemplate.from_messages(
 llm_with_tools = llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
 
 
+def create_agent_executor(agent):
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    return AgentExecutor(agent=agent, tools=tools, verbose=True, memory=memory, max_execution_time=60, max_iterations=50)
+
 def create_agent():
     agent = (
         {
             "input": lambda x: x["input"],
             AGENT_SCRATCHPAD_KEY: lambda x: format_to_openai_function_messages(
                 x["intermediate_steps"]
-            ),
-            "chat_history": lambda x: x["chat_history"],
+            )
         }
         | prompt
         | llm_with_tools
         | OpenAIFunctionsAgentOutputParser()
     )
-    return agent
 
+    agent_executor = create_agent_executor(agent)
+    return agent_executor
 
-if __name__ == "__main__":
-    # agent.invoke({"input": "how many letters in the word educa?", "intermediate_steps": []})
-    # print(a)
-    agent = create_agent()
-    user_input = "how many characters in 'world domination'"
-    user_input = "lets have a friendly discussion!"
-    intermediate_steps = []
-    while True:
-        output = agent.invoke(
-            {
-                "input": user_input,
-                "intermediate_steps": intermediate_steps,
-                "chat_history": chat_history,
-            }
-        )
-        print(type(output))
-        print(output)
-        if isinstance(output, AgentFinish):
-            chat_history.extend(
-                [
-                    HumanMessage(content=user_input),
-                    AIMessage(content=output.return_values["output"]),
-                ]
-            )
+# def agent_executor():
+    # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+# 
 
-        user_input = input("Please enter a response: ")
-        if user_input == "q":
-            break
-        continue
-        print(output, type(output))
-        if isinstance(output, AgentFinish):
-            final_result = output.return_values["output"]
-            # break
-        else:
-            print(f"TOOL NAME: {output.tool}")
-            print(f"TOOL INPUT: {output.tool_input}")
-            tool_to_run = tool_dict.get(output.tool)
-            # tool_to_run = listen_adversary
-            observation = tool_to_run.run(output.tool_input)
-            intermediate_steps.append((output, observation))
-    print(final_result)
