@@ -9,5 +9,3 @@ class RunConfig(BaseModel):
     debater_2_prompt: str
 
     referee_prompt: str
-
-    max_words: int

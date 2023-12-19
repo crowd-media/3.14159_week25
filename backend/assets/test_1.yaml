@@ -1,0 +1,5 @@
+config_id: test_1
+debater_1_prompt: you are alex
+debater_2_prompt: you are not
+debater_prompt_prefix: ''
+referee_prompt: ask about alexification
