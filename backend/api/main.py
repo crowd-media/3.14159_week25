@@ -82,7 +82,7 @@ async def websocket_endpoint(websocket: WebSocket, configuration_id: str, turns:
 
     messages = []
 
-    async for msg in converse(fname):
+    async for msg in converse(fname, turns):
         msg["url"] = tts(msg['text'])
         messages.append(msg)
         await websocket.send_json(msg)
