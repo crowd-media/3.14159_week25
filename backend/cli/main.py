@@ -15,8 +15,10 @@ from langchain.agents.agent import AgentFinish
 from langchain.llms.openai import OpenAI
 
 from backend.pi.agents import create_agent
+from backend.pi.agents import create_referee
+from backend.pi.agents import MEMORY_KEY
 from backend.pi.agents import create_prompt
-from backend.pi.agents import SharedMemory
+from backend.pi.agents import MemoryWithId
 from backend.models.models import RunConfig
 
 
@@ -29,7 +31,13 @@ async def converse(config_path: str):
     intermediate_steps = []
 
     # this is shared, since it is a conversation where all participants are
-    conversation_memory = SharedMemory(
+    conversation_memory_1 = MemoryWithId(
+        llm=OpenAI(model_name="text-davinci-003"),
+        memory_key="chat_history",
+        return_messages=True,
+    )
+
+    conversation_memory_2 = MemoryWithId(
         llm=OpenAI(model_name="text-davinci-003"),
         memory_key="chat_history",
         return_messages=True,
@@ -39,10 +47,10 @@ async def converse(config_path: str):
     prompt_2 = config.debater_prompt_prefix + config.debater_2_prompt
 
     agent_1 = create_agent(
-        conversation_memory, agent_id="agent_1", prompt=create_prompt(prompt_1)
+        conversation_memory_1, agent_id="agent_1", prompt=create_prompt(prompt_1)
     )
     agent_2 = create_agent(
-        conversation_memory, agent_id="agent_2", prompt=create_prompt(prompt_2)
+        conversation_memory_2, agent_id="agent_2", prompt=create_prompt(prompt_2)
     )
 
     t = perf_counter()
@@ -50,11 +58,13 @@ async def converse(config_path: str):
         {
             "input": config.referee_prompt,
             "intermediate_steps": intermediate_steps,
-            "agent_id": "referee",
+            "agent_id": "agent_1",
         }
     )
+    # agent 1 listens
     yield {"speaker": "referee", "text": config.referee_prompt}
     input_1 = output.return_values["output"]
+    conversation_memory_1.save_messsage_with_id(input_1, "agent_2")
     yield {"speaker": "agent_2", "text": input_1}
     answers = set()
 
@@ -63,7 +73,9 @@ async def converse(config_path: str):
     print("referee question:\n\t", config.referee_prompt, end="\n\n")
     print(f"{perf_counter()-t:.4f}", "juan initial response:\n\t", input_1, end="\n\n")
     t = perf_counter()
-    while True:
+    i = 0
+    while i < 6:
+        i += 1
         agent_1_response = await agent_1.ainvoke(
             {
                 "input": input_1,
@@ -74,6 +86,8 @@ async def converse(config_path: str):
 
         if isinstance(agent_1_response, AgentFinish):
             input_2 = agent_1_response.return_values["output"]
+            conversation_memory_2.save_messsage_with_id(input_2, "agent_1")
+
             print(
                 f"{perf_counter()-t:.4f}", "agent_1 response:\n\t", input_2, end="\n\n"
             )
@@ -101,6 +115,8 @@ async def converse(config_path: str):
 
         if isinstance(agent_2_response, AgentFinish):
             input_1 = agent_2_response.return_values["output"]
+            conversation_memory_1.save_messsage_with_id(input_1, "agent_2")
+
             print(
                 f"{perf_counter()-t:.4f}", "agent_2 response:\n\t", input_1, end="\n\n"
             )
@@ -119,10 +135,19 @@ async def converse(config_path: str):
 
         answers.add(input_1)
 
+    # conv finished, referee evaluation
+    referee = create_referee()
+    evaluation = await referee.ainvoke(
+        {MEMORY_KEY: conversation_memory_1.load_memory_for_refereee()}
+    )
+    yield {"speaker": "referee", "text": evaluation}
 
-if __name__ == "__main__":
-    config_path = "assets/dinner_time.yaml"
-    print("calling converse")
-    for msg in converse(config_path):
-        print(msg)
-    print("called convere")
+
+# need to asyncio this main to use cli
+# if __name__ == "__main__":
+#     import asyncio
+#     config_path = "assets/dinner_time.yaml"
+#     print("calling converse")
+#     for msg in converse(config_path):
+#         print(msg)
+#     print("called convere")

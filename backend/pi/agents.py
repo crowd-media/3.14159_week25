@@ -15,7 +15,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.memory import ConversationSummaryBufferMemory
 from langchain.prompts import ChatPromptTemplate
 from langchain.prompts import MessagesPlaceholder
-from langchain.prompts import MessagesPlaceholder
+from langchain.schema import StrOutputParser
 from langchain.tools.render import format_tool_to_openai_function
 
 from langchain_core.messages import AIMessage
@@ -68,7 +68,7 @@ class AiMessageWithID(AIMessage):
     agent_id: str
 
 
-class SharedMemory(ConversationSummaryBufferMemory):
+class MemoryWithId(ConversationSummaryBufferMemory):
     def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Converts a list of messages with id to the point of view of the
         current agent.
@@ -90,6 +90,26 @@ class SharedMemory(ConversationSummaryBufferMemory):
 
         return {MEMORY_KEY: adjusted_messages_by_id}
 
+    def load_memory_for_refereee(self):
+        """Dumps memory to a string like
+
+        agent 1: bla
+        agent 2: blabla
+        agent 1: blablabla
+        agent 2: blu
+        """
+        adjusted_messages_by_id = []
+        mssages_with_id: List[AiMessageWithID] = super().load_memory_variables({})[
+            MEMORY_KEY
+        ]
+        for msg in mssages_with_id:
+            if isinstance(msg, SystemMessage):
+                adjusted_messages_by_id.append(msg)
+                continue
+            adjusted_messages_by_id.append(msg.agent_id + ": " + msg.content)
+
+        return "\n".join(adjusted_messages_by_id)
+
     def save_messsage_with_id(self, message: str, agent_id: str):
         message = AiMessageWithID(content=message, agent_id=agent_id)
         self.chat_memory.add_message(message)
@@ -97,7 +117,7 @@ class SharedMemory(ConversationSummaryBufferMemory):
         self.prune()
 
 
-def handleAgentOutput(agent_id: str, memory: SharedMemory):
+def handleAgentOutput(agent_id: str, memory: MemoryWithId):
     def _handle(output):
         if isinstance(output, AgentFinish):
             memory.save_messsage_with_id(output.return_values["output"], agent_id)
@@ -123,7 +143,13 @@ def create_agent_executor(agent):
     )
 
 
-def create_agent(memory: SharedMemory, agent_id: str, prompt) -> RunnableSequence:
+def step_logger(inputs):
+    """Put in between steps to see what is being passed"""
+    print(inputs)
+    return inputs
+
+
+def create_agent(memory: MemoryWithId, agent_id: str, prompt) -> RunnableSequence:
     agent: RunnableSequence
     # memory_saver = MemorySaver(memory=memory)
     agent = (
@@ -133,6 +159,7 @@ def create_agent(memory: SharedMemory, agent_id: str, prompt) -> RunnableSequenc
         )
         | {
             "input": lambda x: x["input"],
+            "agent_id": lambda x: x["agent_id"],
             AGENT_SCRATCHPAD_KEY: lambda x: format_to_openai_function_messages(
                 x["intermediate_steps"]
             ),
@@ -146,3 +173,41 @@ def create_agent(memory: SharedMemory, agent_id: str, prompt) -> RunnableSequenc
     # agent_executor = create_agent_executor(agent)
     # return agent_executor
     return agent
+
+
+def create_referee() -> RunnableSequence:
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """Consider this conversation, and decide who won. Explain your reasoning.
+    Each message has attached an agent_id. take care of who is saying that, do not confuse them.
+    """,
+            ),
+            # idk
+            ("user", "{" + MEMORY_KEY + "}"),
+        ]
+    )
+
+    runnable = prompt | llm | StrOutputParser()
+    return runnable
+
+
+# def generate_agent_description(name, conversation_description, word_limit):
+
+#     agent_descriptor_system_message = SystemMessage(
+#         content="You can add detail to the description of the conversation participant."
+#     )
+
+#     agent_specifier_prompt = [
+#         agent_descriptor_system_message,
+#         HumanMessage(
+#             content=f"""{conversation_description}
+#             Please reply with a creative description of {name}, in {word_limit} words or less.
+#             Speak directly to {name}.
+#             Give them a point of view.
+#             Do not add anything else."""
+#         ),
+#     ]
+#     agent_description = ChatOpenAI(temperature=1.0)(agent_specifier_prompt).content
+#     return agent_description
