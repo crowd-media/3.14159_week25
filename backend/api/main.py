@@ -73,7 +73,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     conversation_id = await websocket.receive_text()
-    fname = f"assets/conversations/{conversation_id}.yaml"
+    fname = f"assets/configurations/{conversation_id}.yaml"
 
     messages = []
 
@@ -82,7 +82,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_json(msg)
 
     conv_id = uuid4().__str__()
-    json.dump(messages, open(f"assets/{conv_id}.json", "w"))
+    json.dump(messages, open(f"assets/debate_results/{conv_id}.json", "w"))
 
     await websocket.send_json({"message": "conversation_finish", "id": conv_id})
     await websocket.close()
