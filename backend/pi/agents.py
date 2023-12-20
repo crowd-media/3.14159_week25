@@ -25,6 +25,7 @@ from langchain_core.runnables import RunnableLambda
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import RunnableSequence
 
+from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 
 load_dotenv()
 
@@ -68,27 +69,18 @@ class AiMessageWithID(AIMessage):
     agent_id: str
 
 
+class ChatMessageHistoryWithLogging(ChatMessageHistory):
+    def add_message(self, message):
+        print(f"saving ({message = }) to (memory id = {id(self)})")
+        super().add_message(message)
+        print("------------------start")
+        for m in self.messages:
+            print(m)
+        print("------------------end\n\n")
+
+
 class MemoryWithId(ConversationSummaryBufferMemory):
-    def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """Converts a list of messages with id to the point of view of the
-        current agent.
-        """
-        mssages_with_id: List[AiMessageWithID] = super().load_memory_variables(inputs)[
-            MEMORY_KEY
-        ]
-
-        adjusted_messages_by_id = []
-
-        for msg in mssages_with_id:
-            if isinstance(msg, SystemMessage):
-                adjusted_messages_by_id.append(msg)
-                continue
-            if msg.agent_id == inputs.get("agent_id"):
-                adjusted_messages_by_id.append(HumanMessage(content=msg.content))
-            else:
-                adjusted_messages_by_id.append(AIMessage(content=msg.content))
-
-        return {MEMORY_KEY: adjusted_messages_by_id}
+    chat_memory = ChatMessageHistoryWithLogging()
 
     def load_memory_for_refereee(self):
         """Dumps memory to a string like
@@ -104,23 +96,19 @@ class MemoryWithId(ConversationSummaryBufferMemory):
         ]
         for msg in mssages_with_id:
             if isinstance(msg, SystemMessage):
-                adjusted_messages_by_id.append(msg)
-                continue
-            adjusted_messages_by_id.append(msg.agent_id + ": " + msg.content)
+                adjusted_messages_by_id.append(msg.content)
+            if isinstance(msg, HumanMessage):
+                adjusted_messages_by_id.append("agent_1: " + msg.content)
+            if isinstance(msg, AIMessage):
+                adjusted_messages_by_id.append("agent_2: " + msg.content)
 
         return "\n".join(adjusted_messages_by_id)
 
-    def save_messsage_with_id(self, message: str, agent_id: str):
-        message = AiMessageWithID(content=message, agent_id=agent_id)
-        self.chat_memory.add_message(message)
 
-        self.prune()
-
-
-def handleAgentOutput(agent_id: str, memory: MemoryWithId):
+def handleAgentOutput(memory: MemoryWithId):
     def _handle(output):
         if isinstance(output, AgentFinish):
-            memory.save_messsage_with_id(output.return_values["output"], agent_id)
+            memory.chat_memory.add_ai_message(output.return_values["output"])
             return output
         else:
             return {
@@ -168,7 +156,7 @@ def create_agent(memory: MemoryWithId, agent_id: str, prompt) -> RunnableSequenc
         | prompt
         | llm_with_tools
         | OpenAIFunctionsAgentOutputParser()
-        | handleAgentOutput(agent_id, memory)
+        | handleAgentOutput(memory)
     )
     # agent_executor = create_agent_executor(agent)
     # return agent_executor

@@ -23,11 +23,9 @@ from backend.models.models import RunConfig
 
 
 async def converse(config_path: str):
-    print("converse")
     config = yaml.safe_load(open(config_path, "r"))
     config = RunConfig(**config)
-    print("config")
-    print(config)
+
     intermediate_steps = []
 
     # this is shared, since it is a conversation where all participants are
@@ -53,7 +51,12 @@ async def converse(config_path: str):
         conversation_memory_2, agent_id="agent_2", prompt=create_prompt(prompt_2)
     )
 
-    t = perf_counter()
+    # Agent 1 starts. we save it to both memory objects
+    yield {"speaker": "agent_1", "text": config.referee_prompt}
+    conversation_memory_1.chat_memory.add_user_message(config.referee_prompt)
+    conversation_memory_2.chat_memory.add_user_message(config.referee_prompt)
+
+    # agent 1 "asks" agent 2
     output = await agent_2.ainvoke(
         {
             "input": config.referee_prompt,
@@ -61,66 +64,60 @@ async def converse(config_path: str):
             "agent_id": "agent_1",
         }
     )
-    # agent 1 listens
-    yield {"speaker": "referee", "text": config.referee_prompt}
-    input_1 = output.return_values["output"]
-    conversation_memory_1.save_messsage_with_id(input_1, "agent_2")
-    yield {"speaker": "agent_2", "text": input_1}
+    input_for_agent_1 = output.return_values["output"]
+
+    yield {"speaker": "agent_2", "text": input_for_agent_1}
+    # save agent 2 response in agent 1 memory
+    conversation_memory_1.chat_memory.add_user_message(input_for_agent_1)
+
+    # TODO: delete
     answers = set()
 
-    answers.add(input_1)
+    answers.add(input_for_agent_1)
 
-    print("referee question:\n\t", config.referee_prompt, end="\n\n")
-    print(f"{perf_counter()-t:.4f}", "juan initial response:\n\t", input_1, end="\n\n")
-    t = perf_counter()
     i = 0
     while i < 6:
         i += 1
         agent_1_response = await agent_1.ainvoke(
             {
-                "input": input_1,
+                "input": input_for_agent_1,
                 "intermediate_steps": intermediate_steps,
                 "agent_id": "agent_1",
             }
         )
 
         if isinstance(agent_1_response, AgentFinish):
-            input_2 = agent_1_response.return_values["output"]
-            conversation_memory_2.save_messsage_with_id(input_2, "agent_1")
+            input_for_agent_2 = agent_1_response.return_values["output"]
+            conversation_memory_2.chat_memory.add_user_message(input_for_agent_2)
 
-            print(
-                f"{perf_counter()-t:.4f}", "agent_1 response:\n\t", input_2, end="\n\n"
-            )
-            yield {"speaker": "agent_1", "text": input_2}
+            # print(
+            #     f"{perf_counter()-t:.4f}", "agent_1 response:\n\t", input_for_agent_2, end="\n\n"
+            # )
+            yield {"speaker": "agent_1", "text": input_for_agent_2}
             t = perf_counter()
         else:
             print("agent 1 doing some action, not responding")
             # handle actions
             pass
 
-        if input_2 in answers:
-            print("conversation repeated")
-            yield {"speaker": "referee", "text": "conversation repeated, stoping"}
-            break
-
-        answers.add(input_2)
+        answers.add(input_for_agent_2)
 
         agent_2_response = await agent_2.ainvoke(
             {
-                "input": input_2,
+                "input": input_for_agent_2,
                 "intermediate_steps": intermediate_steps,
                 "agent_id": "agent_2",
             }
         )
 
         if isinstance(agent_2_response, AgentFinish):
-            input_1 = agent_2_response.return_values["output"]
-            conversation_memory_1.save_messsage_with_id(input_1, "agent_2")
+            input_for_agent_1 = agent_2_response.return_values["output"]
+            conversation_memory_1.chat_memory.add_user_message(input_for_agent_1)
 
-            print(
-                f"{perf_counter()-t:.4f}", "agent_2 response:\n\t", input_1, end="\n\n"
-            )
-            yield {"speaker": "agent_2", "text": input_1}
+            # print(
+            #     f"{perf_counter()-t:.4f}", "agent_2 response:\n\t", input_for_agent_1, end="\n\n"
+            # )
+            yield {"speaker": "agent_2", "text": input_for_agent_1}
             t = perf_counter()
 
         else:
@@ -128,12 +125,12 @@ async def converse(config_path: str):
             print("agent 2 doing some action, not responding")
             pass
 
-        if input_1 in answers:
+        if input_for_agent_1 in answers:
             print("conversation repeated")
             yield {"speaker": "referee", "text": "conversation repeated, stoping"}
             break
 
-        answers.add(input_1)
+        answers.add(input_for_agent_1)
 
     # conv finished, referee evaluation
     referee = create_referee()
@@ -144,10 +141,14 @@ async def converse(config_path: str):
 
 
 # need to asyncio this main to use cli
-# if __name__ == "__main__":
-#     import asyncio
-#     config_path = "assets/dinner_time.yaml"
-#     print("calling converse")
-#     for msg in converse(config_path):
-#         print(msg)
-#     print("called convere")
+if __name__ == "__main__":
+    import asyncio
+
+    async def do():
+        config_path = "assets/configurations/aliens.yaml"
+        print("calling converse")
+        async for msg in converse(config_path):
+            # print(msg)
+            print("\n\n\n\n")
+
+    asyncio.run(do())
