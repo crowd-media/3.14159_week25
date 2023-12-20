@@ -3,13 +3,15 @@ from time import perf_counter
 
 import yaml
 
-
 # i hate python
 sys.path.append("..")
 sys.path.append(".")
 sys.path.append("../backend")
 sys.path.append("./backend")
 sys.path.append("../../backend")
+
+from dotenv import load_dotenv  
+
 
 from langchain.agents.agent import AgentFinish
 from langchain.llms.openai import OpenAI
@@ -21,6 +23,7 @@ from backend.pi.agents import create_prompt
 from backend.pi.agents import MemoryWithId
 from backend.models.models import RunConfig
 
+load_dotenv()
 
 async def converse(config_path: str):
     config = yaml.safe_load(open(config_path, "r"))

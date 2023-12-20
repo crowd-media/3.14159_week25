@@ -7,6 +7,9 @@ import sys
 
 sys.path.append("..")
 
+from dotenv import load_dotenv
+
+
 from fastapi import FastAPI, WebSocket, HTTPException
 
 
@@ -16,7 +19,9 @@ from backend.models.models import RunConfig, SetupConfig
 from backend.api.helper.agent import generate_agent_description, generate_system_message
 from backend.models.models import Agent, SaveAgents
 
+from backend.pi.tts import tts
 
+load_dotenv()
 
 app = FastAPI(
     title="El Debate API",
@@ -107,6 +112,7 @@ async def websocket_endpoint(websocket: WebSocket):
     messages = []
 
     async for msg in converse(fname):
+        msg["url"] = tts(msg['text'])
         messages.append(msg)
         await websocket.send_json(msg)
 
