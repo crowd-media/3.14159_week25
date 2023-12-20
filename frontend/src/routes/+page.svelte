@@ -1,34 +1,77 @@
 <script>
-	import Counter from './Counter.svelte';
+	import Age from './Age.svelte';
+	import Energy from './Energy.svelte'
+	import Role from './Role.svelte';
+	import Humor from './Humor.svelte';
+	import Aptitude from './Aptitude.svelte';
 	import welcome from '$lib/images/svelte-welcome.webp';
 	import welcome_fallback from '$lib/images/svelte-welcome.png';
 </script>
 
 <svelte:head>
-	<title>Home</title>
+	<title>Configuracion jugador</title>
 	<meta name="description" content="Svelte demo app" />
 </svelte:head>
 
 <section>
 	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcome_fallback} alt="Welcome" />
-			</picture>
-		</span>
-
-		to your new<br />SvelteKit app
+		<p>Configure your player personality</p>
 	</h1>
+	<div>
+		<h2>
+			How old are your player?
+		</h2>
+		<Age />
 
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
+	</div>
+	<div>
+		<h2>
+			Choose the communication type of your player
+		</h2>
+		<div class=button-container>
+			<Energy />
+		</div>
+		
 
-	<Counter />
+	</div>
+	<div>
+		<h2>
+			How do you define your player?
+		</h2>
+		<div class=button-container>
+			<Role />	
+		</div>
+		
+
+	</div>
+	<div>
+		<h2>
+			Choose your player's sense of humor
+		</h2>
+		<div class=button-container>
+			<Humor />
+		</div>
+
+	</div>
+	<div>
+		<h2>
+			Choose the main skill or ability
+		</h2>
+		<div class=button-container>
+			<Aptitude />
+		</div>
+		
+
+	</div>
+	
+	
 </section>
 
 <style>
+	.button-container {
+	  display: flex;
+	  justify-content: center;
+	}
 	section {
 		display: flex;
 		flex-direction: column;
@@ -38,22 +81,19 @@
 	}
 
 	h1 {
+		color: grey;
+    	font-weight:lighter;
+   	 	text-align: center;
+    	font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		width: 75%;
+	}
+	h2 {
+		color: rgb(47, 47, 47);
+    	font-weight:lighter;
+   	 	text-align: center;
+		font-size: 30px;
+    	font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 		width: 100%;
 	}
-
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
-	}
+	
 </style>
