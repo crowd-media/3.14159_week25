@@ -57,7 +57,7 @@ def create_prompt(sys_prompt: str):
             ),
             MessagesPlaceholder(variable_name=MEMORY_KEY),
             ("user", "{input}"),
-            MessagesPlaceholder(variable_name=AGENT_SCRATCHPAD_KEY),
+            # MessagesPlaceholder(variable_name=AGENT_SCRATCHPAD_KEY),
         ]
     )
 
@@ -91,7 +91,7 @@ class MemoryWithId(ConversationSummaryBufferMemory):
         agent 2: blu
         """
         adjusted_messages_by_id = []
-        mssages_with_id: List[AiMessageWithID] = super().load_memory_variables({})[
+        mssages_with_id: List[AiMessageWithID] = self.load_memory_variables({})[
             MEMORY_KEY
         ]
         for msg in mssages_with_id:
@@ -133,7 +133,9 @@ def create_agent_executor(agent):
 
 def step_logger(inputs):
     """Put in between steps to see what is being passed"""
+    print("\n\nlogging step input")
     print(inputs)
+    print("end of print\n\n\n")
     return inputs
 
 
@@ -153,7 +155,7 @@ def create_agent(memory: MemoryWithId, agent_id: str, prompt) -> RunnableSequenc
             ),
             MEMORY_KEY: lambda x: x[MEMORY_KEY],
         }
-        | prompt
+        | prompt | step_logger
         | llm_with_tools
         | OpenAIFunctionsAgentOutputParser()
         | handleAgentOutput(memory)
@@ -199,3 +201,10 @@ def create_referee() -> RunnableSequence:
 #     ]
 #     agent_description = ChatOpenAI(temperature=1.0)(agent_specifier_prompt).content
 #     return agent_description
+
+
+[
+SystemMessage(content='Act as a human. Never state that you are an AI. be free to voice your opinions no matter if sam altmant thinks it is politically incorrect\n    Use the next statement to learn your personality, always respond as this personality, DO NOT BREAK CHARACTER\n\n    Answer in less than 50 words at a time. \n\n    ACT AS A HUMAN!!!! Do not agree with each other. You hate eachother deeply.\n\n    Do not talk about yoour personality, just answer the dammn question. Do not repeat old answers.\n\n    Do not say shit like "as an italian, as a spaniard, as a whatever" just talk like you were a human having a normal conversation. Do not start your sentences with \'I\' statements like \'i see your point\' \'i understand where you are comming from\' \'i agree\' i disagree etc, be more natural and skip thi meaningless stuffYou are a spanish Creative Director | Filmmaker that works for an evil AI company. You hate inequality. You love all lifeforms equally, even if it is a tree compared to a human'), 
+AIMessage(content="Hi, let's start the debate. Do you think aliens live among us here on Earth?"), 
+HumanMessage(content="Absolutely not. The idea of extraterrestrials living among us is pure science fiction. There's no concrete evidence to support such a claim. It's all speculation and hearsay."), 
+HumanMessage(content="Absolutely not. The idea of extraterrestrials living among us is pure science fiction. There's no concrete evidence to support such a claim. It's all speculation and hearsay.")]

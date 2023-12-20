@@ -53,7 +53,7 @@ async def converse(config_path: str):
 
     # Agent 1 starts. we save it to both memory objects
     yield {"speaker": "agent_1", "text": config.referee_prompt}
-    conversation_memory_1.chat_memory.add_user_message(config.referee_prompt)
+    conversation_memory_1.chat_memory.add_ai_message(config.referee_prompt)
     conversation_memory_2.chat_memory.add_user_message(config.referee_prompt)
 
     # agent 1 "asks" agent 2
@@ -61,7 +61,7 @@ async def converse(config_path: str):
         {
             "input": config.referee_prompt,
             "intermediate_steps": intermediate_steps,
-            "agent_id": "agent_1",
+            "agent_id": "agent_2", 
         }
     )
     input_for_agent_1 = output.return_values["output"]
