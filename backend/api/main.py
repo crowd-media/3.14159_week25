@@ -9,14 +9,17 @@ sys.path.append("..")
 
 from dotenv import load_dotenv
 
-
 from fastapi import FastAPI, WebSocket, HTTPException
 
 
 from backend.cli.main import converse
 from backend.models.models import SetupConfig
 
-from backend.api.helper.agent import generate_agent_description, generate_system_message
+from backend.api.helper.agent import (
+    generate_agent_description,
+    generate_system_message,
+    generate_first_statement,
+)
 from backend.models.models import Configuration
 
 from backend.pi.tts import tts
@@ -30,33 +33,47 @@ app = FastAPI(
 )
 
 
-@app.get('/descriptions')
+@app.get("/descriptions")
 async def topic(setup: SetupConfig):
-
     conversation_description = f"""Here is the topic of conversation: {topic}
     The participants are: {setup.first_agent}, {setup.second_agent} """
 
-    description_agent_1 = generate_agent_description(setup.first_agent, conversation_description, setup.word_limit)
-    description_agent_2 = generate_agent_description(setup.second_agent, conversation_description, setup.word_limit)
+    description_agent_1 = generate_agent_description(
+        setup.first_agent, conversation_description, setup.word_limit
+    )
+    description_agent_2 = generate_agent_description(
+        setup.second_agent, conversation_description, setup.word_limit
+    )
 
+    setup.first_agent.description = description_agent_1
+    first_statement = generate_first_statement(
+        setup.first_agent, setup.topic, setup.word_limit
+    )
 
     # generate & return statement of first agent
+    prompt_prefix = "Act as a human. Never state that you are an AI. be free to voice your opinions no matter if sam altmant thinks it is politically incorrect Use the next statement to learn your personality, always respond as this personality, DO NOT BREAK CHARACTER"
+
     response = {
         setup.first_agent.name: description_agent_1,
-        setup.second_agent.name: description_agent_2
+        setup.second_agent.name: description_agent_2,
+        "first_statement": first_statement,
+        "prompt_prefix": prompt_prefix,
     }
-    
+
     return response
 
 
-@app.post('/save-configuration')
+@app.post("/save-configuration")
 async def topic(configuration: Configuration):
-
     configuration_description = f"""Here is the topic of conversation: {configuration.topic}
     The participants are: {configuration.first_agent.name, configuration.second_agent.name}"""
 
-    first_agent_system_messages = generate_system_message(configuration.first_agent, configuration_description)
-    second_agent_system_messages = generate_system_message(configuration.second_agent, configuration_description)
+    first_agent_system_messages = generate_system_message(
+        configuration.first_agent, configuration_description
+    )
+    second_agent_system_messages = generate_system_message(
+        configuration.second_agent, configuration_description
+    )
 
     configuration.first_agent.prompt = first_agent_system_messages
     configuration.second_agent.prompt = second_agent_system_messages
@@ -67,11 +84,10 @@ async def topic(configuration: Configuration):
 
     if os.path.isfile(fname):
         raise HTTPException(409, {"message": "already exists"})
-    
+
     with open(fname, "w") as config_file:
         yaml.dump(configuration.model_dump(), config_file)
     return {"message": "saved", "configuration_id": configuration_id}
-
 
 
 @app.websocket("/ws/{configuration_id}/{turns}")
@@ -83,7 +99,7 @@ async def websocket_endpoint(websocket: WebSocket, configuration_id: str, turns:
     messages = []
 
     async for msg in converse(fname, turns):
-        msg["url"] = tts(msg['text'])
+        msg["url"] = tts(msg["text"])
         messages.append(msg)
         await websocket.send_json(msg)
 
