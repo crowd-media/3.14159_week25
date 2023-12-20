@@ -11,7 +11,11 @@ from fastapi import FastAPI, WebSocket, HTTPException
 
 
 from backend.cli.main import converse
-from backend.models.models import RunConfig
+from backend.models.models import RunConfig, SetupConfig
+
+from backend.api.helper.agent import generate_agent_description, generate_system_message
+from backend.models.models import Agent, SaveAgents
+
 
 
 app = FastAPI(
@@ -21,17 +25,42 @@ app = FastAPI(
 )
 
 
-@app.post("/config")
-async def config(body: RunConfig):
-    """saves a config to a file"""
-    fname = f"assets/configurations/{body.config_id}.yaml"
+@app.get('/descriptions')
+async def topic(setup: SetupConfig):
+
+    conversation_description = f"""Here is the topic of conversation: {topic}
+    The participants are: {setup.first_agent}, {setup.second_agent} """
+
+    description_agent_1 = generate_agent_description(setup.first_agent, conversation_description, setup.word_limit)
+    description_agent_2 = generate_agent_description(setup.second_agent, conversation_description, setup.word_limit)
+
+    response = {
+        setup.first_agent.name: description_agent_1,
+        setup.second_agent.name: description_agent_2
+    }
+    
+    return response
+
+
+@app.post('/save-agents')
+async def topic(saveAgents: SaveAgents):
+
+    conversation_description = f"""Here is the topic of conversation: {saveAgents.topic}
+    The participants are: {saveAgents.first_agent.name, saveAgents.second_agent.name}"""
+
+    first_agent_system_messages = generate_system_message(saveAgents.first_agent, conversation_description)
+    second_agent_system_messages = generate_system_message(saveAgents.second_agent, conversation_description)
+
+    conversation_id = uuid4().__str__()
+
+    fname = f"assets/configurations/{conversation_id}.yml"
 
     if os.path.isfile(fname):
         raise HTTPException(409, {"message": "already exists"})
-
+    
     with open(fname, "w") as config_file:
-        yaml.dump(body.model_dump(), config_file)
-    return {"message": "saved"}
+        yaml.dump(saveAgents.model_dump(), config_file)
+    return {"message": "saved", "conversation_id": conversation_id}
 
 
 @app.put("/config")
@@ -68,7 +97,7 @@ async def config(config_id: str):
     raise HTTPException(404, {"message": "not found"})
 
 
-@app.websocket("/ws")
+@app.websocket("/ws/{conversation_id}")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
