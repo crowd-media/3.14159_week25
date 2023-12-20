@@ -16,7 +16,7 @@
 		return ((n % m) + m) % m;
 	}
 </script>
-
+<p>{offset}</p>
 <div class="counter">
 	<button on:click={() => (count -= 1)} aria-label="Decrease the counter by one">
 		<svg aria-hidden="true" viewBox="0 0 1 1">
