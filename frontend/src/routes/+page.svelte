@@ -1,11 +1,28 @@
 <script>
-	import Age from './Age.svelte';
-	import Energy from './Energy.svelte'
-	import Role from './Role.svelte';
-	import Humor from './Humor.svelte';
-	import Aptitude from './Aptitude.svelte';
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcome_fallback from '$lib/images/svelte-welcome.png';
+	
+	import PlayerDescription from "./PlayerDescription.svelte";
+	
+	let player1_info={
+		player_id:"1",
+        age:1,
+        energy:"",
+        role: "",
+        aptitude:"",
+        humor:""
+    };
+	let player2_info={
+		player_id:"2",
+        age:1,
+        energy:"",
+        role: "",
+        aptitude:"",
+        humor:""
+    }
+	function handleSubmit() {
+		JSON.stringify([player1_info,player2_info])
+		console.log(JSON.stringify([player1_info,player2_info]))
+	}
+
 </script>
 
 <svelte:head>
@@ -17,61 +34,22 @@
 	<h1>
 		<p>Configure your player personality</p>
 	</h1>
-	<div>
-		<h2>
-			How old are your player?
-		</h2>
-		<Age />
+	<form on:submit={handleSubmit}>
 
-	</div>
-	<div>
-		<h2>
-			Choose the communication type of your player
-		</h2>
-		<div class=button-container>
-			<Energy />
-		</div>
-		
-
-	</div>
-	<div>
-		<h2>
-			How do you define your player?
-		</h2>
-		<div class=button-container>
-			<Role />	
-		</div>
-		
-
-	</div>
-	<div>
-		<h2>
-			Choose your player's sense of humor
-		</h2>
-		<div class=button-container>
-			<Humor />
-		</div>
-
-	</div>
-	<div>
-		<h2>
-			Choose the main skill or ability
-		</h2>
-		<div class=button-container>
-			<Aptitude />
-		</div>
-		
-
-	</div>
 	
+	<h1>
+		Player {player1_info.player_id}
+	</h1>
+	<PlayerDescription bind:player_info={player1_info}/>
+	<div class='button-submit'>
+		<input type="submit" name="submit" value="submit button" />
+	</div>
+	</form>
 	
+
 </section>
 
 <style>
-	.button-container {
-	  display: flex;
-	  justify-content: center;
-	}
 	section {
 		display: flex;
 		flex-direction: column;
@@ -87,13 +65,10 @@
     	font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 		width: 75%;
 	}
-	h2 {
-		color: rgb(47, 47, 47);
-    	font-weight:lighter;
-   	 	text-align: center;
-		font-size: 30px;
-    	font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-		width: 100%;
+	.button-submit {
+		padding: 10%;
+		display: flex;
+		justify-content: center;
 	}
 	
 </style>
