@@ -7,6 +7,9 @@ import sys
 
 sys.path.append("..")
 
+from dotenv import load_dotenv
+
+
 from fastapi import FastAPI, WebSocket, HTTPException
 
 
@@ -18,6 +21,7 @@ from backend.models.models import Agent, SaveAgents
 
 from backend.pi.tts import tts
 
+load_dotenv()
 
 app = FastAPI(
     title="El Debate API",
