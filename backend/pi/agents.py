@@ -133,13 +133,13 @@ def create_agent_executor(agent):
 
 def step_logger(inputs):
     """Put in between steps to see what is being passed"""
-    print("\n\nlogging step input")
+    print("\n\n\nlogging step input")
     print(inputs)
     print("end of print\n\n\n")
     return inputs
 
 
-def create_agent(memory: MemoryWithId, agent_id: str, prompt) -> RunnableSequence:
+def create_agent(memory: MemoryWithId, prompt: ChatPromptTemplate) -> RunnableSequence:
     agent: RunnableSequence
     # memory_saver = MemorySaver(memory=memory)
     agent = (
