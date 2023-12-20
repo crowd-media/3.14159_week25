@@ -14,10 +14,10 @@ from fastapi import FastAPI, WebSocket, HTTPException
 
 
 from backend.cli.main import converse
-from backend.models.models import RunConfig, SetupConfig
+from backend.models.models import SetupConfig
 
 from backend.api.helper.agent import generate_agent_description, generate_system_message
-from backend.models.models import Agent, SaveAgents
+from backend.models.models import Configuration
 
 from backend.pi.tts import tts
 
@@ -39,6 +39,8 @@ async def topic(setup: SetupConfig):
     description_agent_1 = generate_agent_description(setup.first_agent, conversation_description, setup.word_limit)
     description_agent_2 = generate_agent_description(setup.second_agent, conversation_description, setup.word_limit)
 
+
+    # generate & return statement of first agent
     response = {
         setup.first_agent.name: description_agent_1,
         setup.second_agent.name: description_agent_2
@@ -47,67 +49,36 @@ async def topic(setup: SetupConfig):
     return response
 
 
-@app.post('/save-agents')
-async def topic(saveAgents: SaveAgents):
+@app.post('/save-configuration')
+async def topic(configuration: Configuration):
 
-    conversation_description = f"""Here is the topic of conversation: {saveAgents.topic}
-    The participants are: {saveAgents.first_agent.name, saveAgents.second_agent.name}"""
+    configuration_description = f"""Here is the topic of conversation: {configuration.topic}
+    The participants are: {configuration.first_agent.name, configuration.second_agent.name}"""
 
-    first_agent_system_messages = generate_system_message(saveAgents.first_agent, conversation_description)
-    second_agent_system_messages = generate_system_message(saveAgents.second_agent, conversation_description)
+    first_agent_system_messages = generate_system_message(configuration.first_agent, configuration_description)
+    second_agent_system_messages = generate_system_message(configuration.second_agent, configuration_description)
 
-    conversation_id = uuid4().__str__()
+    configuration.first_agent.prompt = first_agent_system_messages
+    configuration.second_agent.prompt = second_agent_system_messages
 
-    fname = f"assets/configurations/{conversation_id}.yml"
+    configuration_id = uuid4().__str__()
+
+    fname = f"assets/configurations/{configuration_id}.yml"
 
     if os.path.isfile(fname):
         raise HTTPException(409, {"message": "already exists"})
     
     with open(fname, "w") as config_file:
-        yaml.dump(saveAgents.model_dump(), config_file)
-    return {"message": "saved", "conversation_id": conversation_id}
+        yaml.dump(configuration.model_dump(), config_file)
+    return {"message": "saved", "configuration_id": configuration_id}
 
 
-@app.put("/config")
-async def config(body: RunConfig):
-    """Rewrites a config file"""
-    fname = f"assets/configurations/{body.config_id}.yaml"
-    if os.path.isfile(fname):
-        with open(fname, "w") as config_file:
-            yaml.dump(body.model_dump(), config_file)
-        return {"message": "saved"}
-    raise HTTPException(404, {"message": "not found"})
 
-
-@app.get("/config")
-async def config() -> List[str]:
-    return os.listdir("assets/configurations")
-
-
-@app.get("/config/{config_id}")
-async def config(config_id: str) -> RunConfig:
-    fname = f"assets/configurations/{config_id}.yaml"
-    if os.path.isfile(fname):
-        with open(fname, "r") as config_file:
-            return yaml.safe_load(config_file)
-    raise HTTPException(404, {"message": "not found"})
-
-
-@app.delete("/config/{config_id}")
-async def config(config_id: str):
-    fname = f"assets/configurations/{config_id}.yaml"
-    if os.path.isfile(fname):
-        os.remove(fname)
-        return {"message": "deleted"}
-    raise HTTPException(404, {"message": "not found"})
-
-
-@app.websocket("/ws/{conversation_id}")
-async def websocket_endpoint(websocket: WebSocket):
+@app.websocket("/ws/{configuration_id}/{turns}")
+async def websocket_endpoint(websocket: WebSocket, configuration_id: str, turns: int):
     await websocket.accept()
 
-    conversation_id = await websocket.receive_text()
-    fname = f"assets/configurations/{conversation_id}.yaml"
+    fname = f"assets/configurations/{configuration_id}.yml"
 
     messages = []
 

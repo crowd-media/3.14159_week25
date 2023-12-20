@@ -3,7 +3,8 @@ from time import perf_counter
 
 import yaml
 
-# i hate python
+
+# i jate python
 sys.path.append("..")
 sys.path.append(".")
 sys.path.append("../backend")
@@ -21,31 +22,31 @@ from backend.pi.agents import create_referee
 from backend.pi.agents import MEMORY_KEY
 from backend.pi.agents import create_prompt
 from backend.pi.agents import MemoryWithId
-from backend.models.models import RunConfig
+from backend.models.models import Configuration
 
 load_dotenv()
 
-async def converse(config_path: str):
+async def converse(config_path: str, turns: int):
     config = yaml.safe_load(open(config_path, "r"))
-    config = RunConfig(**config)
+    config = Configuration(**config)
 
     intermediate_steps = []
 
     # this is shared, since it is a conversation where all participants are
     conversation_memory_1 = MemoryWithId(
-        llm=OpenAI(model_name="text-davinci-003"),
+        llm=OpenAI(model_name=config.first_agent.model),
         memory_key="chat_history",
         return_messages=True,
     )
 
     conversation_memory_2 = MemoryWithId(
-        llm=OpenAI(model_name="text-davinci-003"),
+        llm=OpenAI(model_name=config.second_agent.model),
         memory_key="chat_history",
         return_messages=True,
     )
 
-    prompt_1 = config.debater_prompt_prefix + config.debater_1_prompt
-    prompt_2 = config.debater_prompt_prefix + config.debater_2_prompt
+    prompt_1 = config.prompt_prefix + config.first_agent.prompt
+    prompt_2 = config.prompt_prefix + config.second_agent.prompt
 
     agent_1 = create_agent(
         conversation_memory_1, agent_id="agent_1", prompt=create_prompt(prompt_1)
@@ -55,14 +56,14 @@ async def converse(config_path: str):
     )
 
     # Agent 1 starts. we save it to both memory objects
-    yield {"speaker": "agent_1", "text": config.referee_prompt}
-    conversation_memory_1.chat_memory.add_ai_message(config.referee_prompt)
-    conversation_memory_2.chat_memory.add_user_message(config.referee_prompt)
+    yield {"speaker": "agent_1", "text": config.first_statement}
+    conversation_memory_1.chat_memory.add_user_message(config.first_statement)
+    conversation_memory_2.chat_memory.add_user_message(config.first_statement)
 
     # agent 1 "asks" agent 2
     output = await agent_2.ainvoke(
         {
-            "input": config.referee_prompt,
+            "input": config.first_statement,
             "intermediate_steps": intermediate_steps,
             "agent_id": "agent_2", 
         }
@@ -79,7 +80,7 @@ async def converse(config_path: str):
     answers.add(input_for_agent_1)
 
     i = 0
-    while i < 6:
+    while i < turns:
         i += 1
         agent_1_response = await agent_1.ainvoke(
             {
