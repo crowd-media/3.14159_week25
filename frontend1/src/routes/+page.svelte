@@ -16,16 +16,32 @@
     
     <div class="forms"> 
         <div class="form_agent_1"> 
-            form player 1
+            <br/>
+            <br/>
+            form agent 1<br/>
+            <br/>
+            <br/>
         </div>
         
         <div class="form_agent_2"> 
-            form player 2 <br/>
-            khbfv<br/>
-            sfjnv<br/>
-            fv
+            <br/>
+            <br/>
+            form agent 2<br/>
+            <br/>
+            <br/>
         </div>
-    </div>  
+    </div> 
+    
+    <div class="topic">
+        Add your topic:
+    </div>
+
+    <div class="generate-promps">
+        Generate Prompts!
+    </div>
+
+
+
 </main>
     
     
@@ -42,39 +58,49 @@
       padding: 10px;
               box-sizing: border-box;
       border-radius: 20px;
-      grid-template-columns: 1fr 1fr;
       display: flex;
       flex-direction: row;
       justify-content: space-evenly;
   }
-  
+  .topic{
+      box-shadow: 6px 6px 10px rgba(34, 34, 34, 0.2), -6px -6px 10px #fff;
+      padding: 10px;
+      box-sizing: border-box;
+      border-radius: 20px;
+      margin: 20px auto;
+  }
+  .generate-promps{
+      background-color: rgb(255, 159, 103);
+      box-shadow: 6px 6px 10px rgba(34, 34, 34, 0.2), -6px -6px 10px #fff;
+      padding: 10px;
+      box-sizing: border-box;
+      border-radius: 20px;
+      margin: 30px auto;
+  }
+
   .forms{
     display: grid;
-          grid-template-columns: 1fr 1fr;
-      grid-gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 20px;
   }
   .form_agent_1{
-      grid-row: 3;
-      grid-column: 1;
-            box-shadow: 6px 6px 10px rgba(34, 34, 34, 0.2), -6px -6px 10px #fff;
-    padding: 10px;
-            box-sizing: border-box;
+    grid-row: 3;
+    grid-column: 1;
+    box-shadow: 6px 6px 10px rgba(34, 34, 34, 0.2), -6px -6px 10px #fff;
     border-radius: 20px;
+    padding: 10px;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
   }
 
   .form_agent_2{
-      grid-row: 3;
-      grid-column: 2;
-            box-shadow: 6px 6px 10px rgba(34, 34, 34, 0.2), -6px -6px 10px #fff;
+    grid-row: 3;
+    grid-column: 2;
+    box-shadow: 6px 6px 10px rgba(34, 34, 34, 0.2), -6px -6px 10px #fff;
     padding: 10px;
-    box-sizing: border-box;
     border-radius: 20px;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
   }

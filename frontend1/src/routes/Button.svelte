@@ -8,7 +8,7 @@
 
 <style>
 	button {
-	  background: #ff3e00;
+	  background: #c2c6c5;
 	  color: white;
 	  border: none;
 	  padding: 8px 12px;
