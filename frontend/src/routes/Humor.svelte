@@ -1,6 +1,6 @@
 <script>
 	const humor_types = ['Ironical', 'Absurd', 'Neutral','Serious'];
-	let selected = humor_types[0];
+	export let selected = humor_types[0];
 </script>
 
 

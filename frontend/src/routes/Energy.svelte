@@ -1,6 +1,7 @@
 <script>
 	const colors = ['Assertive', 'Passive', 'Aggressive', 'Manipulative'];
-	let selected = colors[0];
+	export let selected = colors[0];
+	$: console.log(selected)
 </script>
 
 

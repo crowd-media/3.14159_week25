@@ -1,6 +1,6 @@
 <script>
 	const roles = ['Leader', 'Follower'];
-	let selected = roles[0];
+	export let selected = roles[0];
 </script>
 
 
