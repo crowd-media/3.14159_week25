@@ -78,7 +78,7 @@ async def topic(configuration: Configuration):
 async def websocket_endpoint(websocket: WebSocket, configuration_id: str, turns: int):
     await websocket.accept()
 
-    fname = f"assets/configurations/{configuration_id}.yml"
+    fname = f"assets/configurations/{configuration_id}.yaml"
 
     messages = []
 

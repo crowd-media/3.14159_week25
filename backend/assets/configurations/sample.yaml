@@ -1,0 +1,7 @@
+topic: "topic"
+first_agent: 
+  name: "agent 1"
+second_agent: 
+  name: "agent 2"
+prompt_prefix: "prompt prefix"
+first_statement: " first statement"
