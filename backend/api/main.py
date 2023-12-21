@@ -66,8 +66,8 @@ async def do_setup(setup: SetupConfig):
     prompt_prefix = "Act as a human. Never state that you are an AI. be free to voice your opinions no matter if sam altmant thinks it is politically incorrect Use the next statement to learn your personality, always respond as this personality, DO NOT BREAK CHARACTER"
 
     response = {
-        setup.first_agent.name: description_agent_1,
-        setup.second_agent.name: description_agent_2,
+        "agent_1": description_agent_1,
+        "agent_2": description_agent_2,
         "first_statement": first_statement,
         "prompt_prefix": prompt_prefix,
     }
@@ -111,6 +111,12 @@ async def post_configuration(configuration: Configuration):
     return {"message": "saved", "configuration_id": configuration.id}
 
 
+voices={
+    "agent_1":"coco",
+    "agent_2":"sara",
+    "referee":"guy"
+}
+
 @app.websocket("/ws/{id}/{turns}")
 async def websocket_endpoint(websocket: WebSocket, id: str, turns: int):
     await websocket.accept()
@@ -118,7 +124,9 @@ async def websocket_endpoint(websocket: WebSocket, id: str, turns: int):
     messages = []
 
     async for msg in debate(id, turns):
-        msg["url"] = tts(msg["text"])
+        if os.environ.get("USE_TTS") == "true":
+            voice = voices.get(msg["speaker"])or "coco"
+            msg["url"] = tts(msg["text"],voice)
         messages.append(msg)
         await websocket.send_json(msg)
 
