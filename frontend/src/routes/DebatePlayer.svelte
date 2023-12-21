@@ -2,6 +2,8 @@
 	import { spring } from 'svelte/motion';
 	import { onMount } from 'svelte';
 
+	let conv_id = ""
+
 	let socket
 	let messagesFromServer = []
 
@@ -10,10 +12,10 @@
 		messagesFromServer = [...messagesFromServer, message] 	
 	};
 
-	onMount(async () => {
+	const playConv = async () => {
 		// Here we recieve a callback whenever new data is pushed into the store
 
-		socket = new WebSocket("ws://127.0.0.1:8000/ws/sample/5")
+		socket = new WebSocket(`ws://127.0.0.1:8000/ws/${conv_id}/5`)
   		socket.addEventListener("open", ()=> {
     	console.log("Opened")
 	  	})
@@ -22,7 +24,7 @@
   			addToArray({ time: new Date(), data: event.data }); // When the server respons with a message we save it in an array
 		});
 
-	})
+	}
 
 
 
@@ -31,6 +33,10 @@
 
 
 <div >
+
+	<p>Select conversation id</p>
+	<input bind:value={conv_id}>
+	<button on:click={playConv}>Play</button>
 
 	{#each messagesFromServer as message}
 	<div
