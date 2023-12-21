@@ -4,13 +4,14 @@ import json
 from typing import List
 from uuid import uuid4
 import sys
-from .helper.config import load_config, save_config , delete_config, update_config
+from .helper.config import load_config, save_config, delete_config, update_config
 
 sys.path.append("..")
 
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, WebSocket, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 
 from backend.cli.main import debate
@@ -34,8 +35,17 @@ app = FastAPI(
 )
 
 
-@app.get("/descriptions")
-async def get_setup(setup: SetupConfig):
+# f in chat
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.post("/descriptions")
+async def do_setup(setup: SetupConfig):
     conversation_description = f"""Here is the topic of conversation: {setup.topic}
     The participants are: {setup.first_agent}, {setup.second_agent} """
 
@@ -63,16 +73,19 @@ async def get_setup(setup: SetupConfig):
 
     return response
 
-@app.get('/configuration/{id}')
+
+@app.get("/configuration/{id}")
 async def get_configuration(id: str):
     return load_config(id)
 
-@app.delete('/configuration/{id}')
+
+@app.delete("/configuration/{id}")
 async def delete_configuration(id: str):
     delete_config()
     return {"message": "success"}
 
-@app.put('/configuration/{id}')
+
+@app.put("/configuration/{id}")
 async def delete_configuration(config: Configuration):
     return update_config(config)
 
