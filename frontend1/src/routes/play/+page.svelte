@@ -1,103 +1,90 @@
 <script>
-	import { spring } from 'svelte/motion';
-	import { onMount } from 'svelte';
-	let socket
-	let messagesFromServer = []
-	const addToArray = (message) => {
-		console.log(event) 
-		messagesFromServer = [...messagesFromServer, message] 	
+
+	let socket;
+	let conversation_id = "ai_uprising";
+	/**
+	 * @type {any[]}
+	 */
+	let messagesFromServer = [];
+	const addToArray = (/** @type {{ time: Date; data: any; }} */ message) => {
+	  messagesFromServer = [message, ...messagesFromServer];
 	};
-	onMount(async () => {
-		// Here we recieve a callback whenever new data is pushed into the store
-		socket = new WebSocket("ws://127.0.0.1:8000/ws/sample/5")
-  		socket.addEventListener("open", ()=> {
-    	console.log("Opened")
-	  	})
-	  socket.addEventListener('message', function (event) {
-  			addToArray({ time: new Date(), data: event.data }); // When the server respons with a message we save it in an array
-		});
-	})
-</script>
-hello!! We are in plaaaaaaay *_*
-<div >
-	{#each messagesFromServer as message}
-	<div
-	   id="slider"
-	   class="slide-in orange"
-	   v-for="message in messagesFromServer"
-	   :key="message.time"
-	 >
-	   <ul>
-		 <p>
-		   { new Date(message.time).toISOString() }
-		 </p>
-		 <li>
-		   { JSON.parse(message.data).text }
-		   <audio controls>
-			<source src={ JSON.parse(message.data).url } type="audio/mp3">
-			Your browser does not support the audio element.
-			</audio>
-		
-		 </li>
-	   </ul>
-	 </div>
+	const handlePlay = async () => {
+	  // Here we recieve a callback whenever new data is pushed into the store
+	  socket = new WebSocket(`ws://127.0.0.1:8000/ws/${conversation_id}/5`);
+	  messagesFromServer = [];
+	  socket.addEventListener("open", () => {
+		console.log("Opened");
+	  });
+	  socket.addEventListener("message", function (event) {
+		console.log(event.data);
+		addToArray({ time: new Date(), data: JSON.parse(event.data) }); // When the server respons with a message we save it in an array
+	  });
+	};
+  
+	$: console.log({ messagesFromServer });
+  </script>
+  
+  <div class="container">
+	<div class="chat">
+	  <p>Select conversation id</p>
+	  <input bind:value={conversation_id} placeholder="Conversation ID" />
+	  <button on:click={handlePlay}>Play</button>
+	  {#each messagesFromServer as message}
+		{#if message.data.message === "conversation_finish"}
+		  <span class="agent">Conversation finished</span>
+		{:else}
+		  <div class={message.data.speaker} class:agent={true}>
+			<!-- <p>
+				  {new Date(message.time).toISOString()}
+				</p> -->
+			<p>
+			  {message.data.text}
+			</p>
+			{#if message.data.url}
+			  <audio controls>
+				<source src={message.data.url} type="audio/mp3" />
+				Your browser does not support the audio element.
+			  </audio>
+			{/if}
+		  </div>
+		{/if}
 	  {/each}
-</div>
-<style>
-	.counter {
-		display: flex;
-		border-top: 1px solid rgba(0, 0, 0, 0.1);
-		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-		margin: 1rem 0;
+	</div>
+  </div>
+  
+  <style>
+	.container {
+	  display: flex;
+	  flex-direction: column;
+	  overflow-y: scroll;
+	  width: 100vw;
+	  align-self: center;
 	}
-	.counter button {
-		width: 2em;
-		padding: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 0;
-		background-color: transparent;
-		touch-action: manipulation;
-		font-size: 2rem;
+	.chat {
+	  display: flex;
+	  flex-direction: column;
+	  max-width: 500px;
+	  align-self: center;
 	}
-	.counter button:hover {
-		background-color: var(--color-bg-1);
+	.agent {
+	  width: 80%;
+	  margin: 10px;
+	  padding: 10px;
+	  border-radius: 5px;
 	}
-	svg {
-		width: 25%;
-		height: 25%;
+	.agent_1 {
+	  background-color: aliceblue;
+	  align-self: flex-start;
 	}
-	path {
-		vector-effect: non-scaling-stroke;
-		stroke-width: 2px;
-		stroke: #444;
+  
+	.agent_2 {
+	  background-color: antiquewhite;
+	  align-self: flex-end;
 	}
-	.counter-viewport {
-		width: 8em;
-		height: 4em;
-		overflow: hidden;
-		text-align: center;
-		position: relative;
+  
+	.referee {
+	  background-color: aquamarine;
+	  align-self: center;
 	}
-	.counter-viewport strong {
-		position: absolute;
-		display: flex;
-		width: 100%;
-		height: 100%;
-		font-weight: 400;
-		color: var(--color-theme-1);
-		font-size: 4rem;
-		align-items: center;
-		justify-content: center;
-	}
-	.counter-digits {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-	}
-	.hidden {
-		top: -100%;
-		user-select: none;
-	}
-</style>
+  </style>

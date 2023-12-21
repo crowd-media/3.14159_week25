@@ -35,6 +35,7 @@
       display: flex;
       flex-direction: row;
       justify-content: space-evenly;
+      margin:20px;
   }
   button{
     font-size: 20px;
