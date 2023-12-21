@@ -114,11 +114,9 @@ async def post_configuration(configuration: Configuration):
 async def websocket_endpoint(websocket: WebSocket, id: str, turns: int):
     await websocket.accept()
 
-    fname = f"assets/configurations/{id}.yml"
-
     messages = []
 
-    async for msg in debate(fname, turns):
+    async for msg in debate(id, turns):
         msg["url"] = tts(msg["text"])
         messages.append(msg)
         await websocket.send_json(msg)
