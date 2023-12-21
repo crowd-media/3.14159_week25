@@ -2,7 +2,7 @@ import os
 
 import yaml
 from models.models import Configuration
-from fastapi import HTTPException
+from fastapi import (WebSocketException, HTTPException, status)
 
 config_savespot = os.environ["CONFIG_SAVESPOT"]
 
@@ -15,7 +15,7 @@ def load_config(filename: str) -> Configuration:
     path = f"{config_savespot}{filename}.yml"
 
     if not os.path.exists(path):
-        raise HTTPException(409, {"message": "file does not exist or was not found"})
+        raise WebSocketException(code=status.WS_1007_INVALID_FRAME_PAYLOAD_DATA, reason="invalid file")
 
     config = yaml.safe_load(open(path, "r"))
     config = Configuration(**config)
@@ -26,7 +26,7 @@ def save_config(config: Configuration) -> Configuration:
     path = f"{config_savespot}{config.id}.yml"
     
     if os.path.isfile(path):
-        raise HTTPException(409, {"message": "already exists"})
+        raise HTTPException(status.HTTP_409_CONFLICT, {"message": "already exists"})
 
     return write_config_to_file(path, config)
     
@@ -35,7 +35,7 @@ def delete_config(filename: str) -> None:
     path = f"{config_savespot}{filename}.yml"
 
     if not os.path.exists(path):
-        raise HTTPException(409, {"message": "file does not exist or was not found"})
+        raise HTTPException(status.HTTP_409_CONFLICT, {"message": "file does not exist or was not found"})
 
     os.remove(path)
     return
