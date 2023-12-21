@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 
 from langchain.agents.agent import AgentFinish
-from langchain.llms.openai import OpenAI
+from langchain.chat_models import ChatOpenAI
 
 from backend.pi.agents import create_agent
 from backend.pi.agents import create_referee
@@ -34,13 +34,13 @@ async def converse(config_path: str, turns: int):
 
     # this is shared, since it is a conversation where all participants are
     conversation_memory_1 = MemoryWithId(
-        llm=OpenAI(model_name=config.first_agent.model),
+        llm=ChatOpenAI(model_name=config.first_agent.model),
         memory_key="chat_history",
         return_messages=True,
     )
 
     conversation_memory_2 = MemoryWithId(
-        llm=OpenAI(model_name=config.second_agent.model),
+        llm=ChatOpenAI(model_name=config.second_agent.model),
         memory_key="chat_history",
         return_messages=True,
     )
