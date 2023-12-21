@@ -23,13 +23,13 @@ from backend.pi.agents import MEMORY_KEY
 from backend.pi.agents import create_prompt
 from backend.pi.agents import MemoryWithId
 from backend.models.models import Configuration
+from backend.api.helper.config import load_config
 
 load_dotenv()
 
-async def converse(config_path: str, turns: int):
-    config = yaml.safe_load(open(config_path, "r"))
-    config = Configuration(**config)
+async def debate(config_path: str, turns: int):
 
+    config = load_config(config_path)
     intermediate_steps = []
 
     # this is shared, since it is a conversation where all participants are
