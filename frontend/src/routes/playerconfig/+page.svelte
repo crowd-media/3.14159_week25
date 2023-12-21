@@ -25,9 +25,22 @@
         aptitude:"",
         humor:""
     }
-	function handleSubmit() {
+	let json_post={
+		topic: "Baseball",
+		word_limit: 50,
+		first_agent:{
+			name: "Bori",
+			characteristics: ["age=14","hair=blond","mood=aggressive,emotional,hurting,boring"]
+		},
+		second_agent:{
+			name: "Momo",
+			characteristics: ["age=4","hair=ginger","mood=calm,emotional,hurting,boring"]
+		}
+    }
 
-		JSON.stringify([player1_info,player2_info])
+	async function handleSubmit() {
+
+		JSON.stringify(json_post)
 		console.log(JSON.stringify([player1_info,player2_info]))
 	}
 
