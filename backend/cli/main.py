@@ -56,7 +56,7 @@ async def debate(config_path: str, turns: int):
     )
 
     # Agent 1 starts. we save it to both memory objects
-    yield {"speaker": config.first_agent.name, "text": config.first_statement}
+    yield {"speaker": "agent_1", "text": config.first_statement}
     conversation_memory_1.chat_memory.add_user_message(config.first_statement)
     conversation_memory_2.chat_memory.add_user_message(config.first_statement)
 
@@ -70,7 +70,7 @@ async def debate(config_path: str, turns: int):
     )
     input_for_agent_1 = output.return_values["output"]
 
-    yield {"speaker": config.second_agent.name, "text": input_for_agent_1}
+    yield {"speaker": "agent_2", "text": input_for_agent_1}
     # save agent 2 response in agent 1 memory
     conversation_memory_1.chat_memory.add_user_message(input_for_agent_1)
 
@@ -97,7 +97,7 @@ async def debate(config_path: str, turns: int):
             # print(
             #     f"{perf_counter()-t:.4f}", "agent_1 response:\n\t", input_for_agent_2, end="\n\n"
             # )
-            yield {"speaker": config.first_agent.name, "text": input_for_agent_2}
+            yield {"speaker": "agent_1", "text": input_for_agent_2}
             t = perf_counter()
         else:
             print("agent 1 doing some action, not responding")
@@ -121,7 +121,7 @@ async def debate(config_path: str, turns: int):
             # print(
             #     f"{perf_counter()-t:.4f}", "agent_2 response:\n\t", input_for_agent_1, end="\n\n"
             # )
-            yield {"speaker": config.second_agent.name, "text": input_for_agent_1}
+            yield {"speaker": "agent_2", "text": input_for_agent_1}
             t = perf_counter()
 
         else:
