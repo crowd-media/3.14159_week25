@@ -49,10 +49,10 @@ async def converse(config_path: str, turns: int):
     prompt_2 = config.prompt_prefix + config.second_agent.prompt
 
     agent_1 = create_agent(
-        conversation_memory_1, agent_id="agent_1", prompt=create_prompt(prompt_1)
+        conversation_memory_1, prompt=create_prompt(prompt_1)
     )
     agent_2 = create_agent(
-        conversation_memory_2, agent_id="agent_2", prompt=create_prompt(prompt_2)
+        conversation_memory_2, prompt=create_prompt(prompt_2)
     )
 
     # Agent 1 starts. we save it to both memory objects
