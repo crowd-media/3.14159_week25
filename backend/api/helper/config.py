@@ -1,9 +1,11 @@
 import os
 
+from dotenv import load_dotenv
 import yaml
 from models.models import Configuration
 from fastapi import (WebSocketException, HTTPException, status)
 
+load_dotenv()
 config_savespot = os.environ["CONFIG_SAVESPOT"]
 
 def write_config_to_file(path: str, config: Configuration) -> Configuration:

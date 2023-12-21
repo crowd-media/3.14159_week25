@@ -1,32 +1,112 @@
+<script>
+  import PlayerDescription from "./player_form/PlayerDescription.svelte";
+
+  let player1_info={
+        age:1,
+		    hair_color:"",
+        energy:"",
+        role: "",
+        aptitude:"",
+        humor:""
+    };
+  
+  let player2_info={
+        age:1,
+		    hair_color:"",
+        energy:"",
+        role: "",
+        aptitude:"",
+        humor:""
+    };
+
+  let body_config={
+		topic:"",
+		word_limit:50,
+		first_agent:{
+			name: "",
+			characteristics:[]
+		},
+		second_agent:{
+			name: "",
+			characteristics:[]
+		}
+  };
+
+  var raw = JSON.stringify({
+		"topic": "Who is the better one of us",
+		"word_limit": 50,
+		"first_agent": {
+			"name": "Juju",
+			"characteristics": [
+			"age = 27",
+			"humor=serious",
+			"mood=sweet,emotional,loving,hungry,perfect,analytic,open-minded"
+			]
+		},
+		"second_agent": {
+			"name": "Momo",
+			"characteristics": [
+			"age = 30",
+			"hair=brown",
+			"eyecolor=brown",
+			"mood=emotional, not balanced, hateful"
+			]
+		}
+		});
+
+  async function handleSubmit() {
+		console.log(raw)
+		// body_config.first_agent.name=player1_info.player_name
+		// let characteristics= Object.keys(player1_info).map(key => `${key}=${player1_info[key]}`);
+		// body_config.first_agent.characteristics = characteristics
+		
+		console.log(body_config)
+		const response = await fetch("http://localhost:8000/configuration", {
+					"headers": {
+						"accept": "application/json",
+						"accept-language": "en-US,en;q=0.9",
+						"sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+						"sec-ch-ua-mobile": "?1",
+						"sec-ch-ua-platform": "\"Android\"",
+						"sec-fetch-dest": "empty",
+						"sec-fetch-mode": "cors",
+						"sec-fetch-site": "same-origin"
+					},
+					"referrer": "http://localhost:8000/docs",
+					"referrerPolicy": "strict-origin-when-cross-origin",
+					"body": raw,
+					"method": "POST",
+					"mode": "cors",
+					"credentials": "omit"
+					});
+		console.log(response)
+		const respiri = await response.json()
+		
+	}
+</script>
+
+
 <div class="container">
   <div class="setup">
     <label class = "justify-flex">
       <span>Add your topic:</span>
-      <input class="margin-20"/>
+      <input class="margin-20" bind:value={body_config.topic}/>
     </label>
 
     <div class="grid"> 
       <div class="box-style grid_column_left"> 
-          <br/>
-          <br/>
-          form agent 1<br/>
-          <br/>
-          <br/>
+        <PlayerDescription bind:player_info={player1_info}/>
       </div>
       
       <div class="box-style grid_column_right"> 
-          <br/>
-          <br/>
-          form agent 2<br/>
-          <br/>
-          <br/>
+        <PlayerDescription bind:player_info={player2_info}/>
       </div>
   </div> 
   
-  <button class="box-style generate-promps">
+  <button class="box-style generate-promps" on:click={handleSubmit}>
     <p>GENERATE AGENTS DESCRIPTIONS!</p>
   </button>
-  
+
   <p> Prompt prefix</p>
   <textarea rows="8" class="box-style width-100">
   </textarea>
