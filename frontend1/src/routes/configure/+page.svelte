@@ -1,83 +1,129 @@
 <script>
-	import PlayerDescription from './player_form/PlayerDescription.svelte';
+	import PlayerDescription from "./player_form/PlayerDescription.svelte";
 
 	let player1_info = {
 		age: 1,
-		hair_color: '',
-		energy: '',
-		role: '',
-		aptitude: '',
-		humor: ''
+		name: "",
+		hair_color: "",
+		energy: "",
+		role: "",
+		aptitude: "",
+		humor: "",
 	};
 
 	let player2_info = {
 		age: 1,
-		hair_color: '',
-		energy: '',
-		role: '',
-		aptitude: '',
-		humor: ''
+		name: "",
+		hair_color: "",
+		energy: "",
+		role: "",
+		aptitude: "",
+		humor: "",
 	};
 
 	let body_config = {
-		topic: '',
+		topic: "",
 		word_limit: 50,
 		first_agent: {
-			name: '',
-			characteristics: []
+			name: "",
+			characteristics: [],
 		},
 		second_agent: {
-			name: '',
-			characteristics: []
-		}
+			name: "",
+			characteristics: [],
+		},
 	};
 
-	var raw = JSON.stringify({
-		topic: 'Who is the better one of us',
-		word_limit: 50,
-		first_agent: {
-			name: 'Juju',
-			characteristics: [
-				'age = 27',
-				'humor=serious',
-				'mood=sweet,emotional,loving,hungry,perfect,analytic,open-minded'
-			]
-		},
-		second_agent: {
-			name: 'Momo',
-			characteristics: [
-				'age = 30',
-				'hair=brown',
-				'eyecolor=brown',
-				'mood=emotional, not balanced, hateful'
-			]
-		}
-	});
+	let description_response = {
+		first_statement: "",
+		prompt_prefix: "",
+		agent_1: "",
+		agent_2: "",
+	};
 
-	async function handleSubmit() {
+	let configuration_id = "";
+
+	async function handleDescriptionSubmit() {
+		const raw = JSON.stringify({
+			topic: body_config.topic,
+			word_limit: body_config.word_limit,
+			first_agent: {
+				name: player1_info.name,
+				characteristics: Object.keys(player1_info).map(
+					// @ts-ignore
+					(key) => `${key}=${player1_info[key]}`,
+				),
+				model: "gpt-4",
+			},
+			second_agent: {
+				name: player2_info.name,
+				characteristics: Object.keys(player2_info).map(
+					// @ts-ignore
+					(key) => `${key}=${player2_info[key]}`,
+				),
+				model: "gpt-4",
+			},
+		});
+
+		console.log("LETS FETCH");
+		console.log(raw);
+
+		console.log(body_config);
+		try {
+			const response = await fetch("http://127.0.0.1:8000/descriptions", {
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: raw,
+				method: "POST",
+			});
+			console.log(response);
+			description_response = await response.json();
+		} catch (e) {
+			console.log(e);
+			alert("error");
+		}
+	}
+
+	async function handleConfigurationSubmit() {
+		const raw = JSON.stringify({
+			id: configuration_id,
+			topic: body_config.topic,
+			first_agent: {
+				name: player1_info.name,
+				characteristics: Object.keys(player1_info).map(
+					// @ts-ignore
+					(key) => `${key}=${player1_info[key]}`,
+				),
+				description: description_response.agent_1,
+				model: "gpt-4",
+			},
+			second_agent: {
+				name: player2_info.name,
+				characteristics: Object.keys(player2_info).map(
+					// @ts-ignore
+					(key) => `${key}=${player2_info[key]}`,
+				),
+				description: description_response.agent_2,
+				model: "gpt-4",
+			},
+			prompt_prefix: description_response.prompt_prefix,
+			first_statement: description_response.first_statement,
+		});
+
+		console.log("LETS FETCH");
 		console.log(raw);
 		// body_config.first_agent.name=player1_info.player_name
 		// let characteristics= Object.keys(player1_info).map(key => `${key}=${player1_info[key]}`);
 		// body_config.first_agent.characteristics = characteristics
 
 		console.log(body_config);
-		const response = await fetch('http://localhost:8000/configuration', {
+		const response = await fetch("http://127.0.0.1:8000/configuration", {
 			headers: {
-				accept: 'application/json',
-				'accept-language': 'en-US,en;q=0.9',
-				'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Microsoft Edge";v="120"',
-				'sec-ch-ua-mobile': '?1',
-				'sec-ch-ua-platform': '"Android"',
-				'sec-fetch-dest': 'empty',
-				'sec-fetch-mode': 'cors',
-				'sec-fetch-site': 'same-origin'
+				"Content-Type": "application/json",
 			},
-			referrer: 'http://localhost:8000/docs',
-			referrerPolicy: 'strict-origin-when-cross-origin',
 			body: raw,
-			method: 'POST',
-			mode: 'cors',
-			credentials: 'omit'
+			method: "POST",
 		});
 		console.log(response);
 		const respiri = await response.json();
@@ -101,29 +147,54 @@
 			</div>
 		</div>
 
-		<button class="box-style generate-promps" on:click={handleSubmit}>
+		<button
+			class="box-style generate-promps"
+			on:click={handleDescriptionSubmit}
+		>
 			<p>GENERATE AGENTS DESCRIPTIONS!</p>
 		</button>
 
 		<p>Prompt prefix</p>
-		<textarea rows="8" class="box-style width-100"> </textarea>
+		<textarea
+			rows="8"
+			class="box-style width-100"
+			bind:value={description_response.prompt_prefix}
+		/>
 
 		<div class="grid">
 			<p>Prompt agent 1</p>
-			<textarea rows="10" class="box-style grid_column_left"> </textarea>
+			<textarea
+				rows="10"
+				class="box-style grid_column_left"
+				bind:value={description_response.agent_1}
+			/>
 			<p>Prompt agent 2</p>
-			<textarea rows="10" class="box-style grid_column_right"> </textarea>
+			<textarea
+				rows="10"
+				class="box-style grid_column_right"
+				bind:value={description_response.agent_2}
+			/>
 		</div>
 
 		<p>Referee First Message</p>
-		<textarea rows="8" class="box-style width-100"> </textarea>
+		<textarea
+			rows="8"
+			class="box-style width-100"
+			bind:value={description_response.first_statement}
+		/>
 
 		<label class="justify-flex-column">
-			<span>Conversation ID</span>
-			<textarea class="conversation-id box-style"> </textarea>
+			<span>Configuration ID</span>
+			<textarea
+				class="conversation-id box-style"
+				bind:value={configuration_id}
+			/>
 		</label>
 
-		<button class="box-style generate-promps">
+		<button
+			class="box-style generate-promps"
+			on:click={handleConfigurationSubmit}
+		>
 			<p>Save Config</p>
 		</button>
 	</div>
