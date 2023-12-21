@@ -1,116 +1,158 @@
-import os
-import yaml
-import json
-from typing import List
-from uuid import uuid4
 import sys
-from .helper.config import load_config, save_config , delete_config, update_config
+from time import perf_counter
 
+import yaml
+
+
+# i jate python
 sys.path.append("..")
+sys.path.append(".")
+sys.path.append("../backend")
+sys.path.append("./backend")
+sys.path.append("../../backend")
 
-from dotenv import load_dotenv
-
-from fastapi import FastAPI, WebSocket, HTTPException
+from dotenv import load_dotenv  
 
 
-from backend.cli.main import debate
-from backend.models.models import SetupConfig
+from langchain.agents.agent import AgentFinish
+from langchain.chat_models import ChatOpenAI
 
-from backend.api.helper.agent import (
-    generate_agent_description,
-    generate_system_message,
-    generate_first_statement,
-)
+from backend.pi.agents import create_agent
+from backend.pi.agents import create_referee
+from backend.pi.agents import MEMORY_KEY
+from backend.pi.agents import create_prompt
+from backend.pi.agents import MemoryWithId
 from backend.models.models import Configuration
-
-from backend.pi.tts import tts
+from backend.api.helper.config import load_config
 
 load_dotenv()
 
-app = FastAPI(
-    title="El Debate API",
-    description="An API for the El Debate project",
-    version="0.0.0 (leets keep it this way forever)",
-)
+async def debate(config_path: str, turns: int):
 
+    config = load_config(config_path)
+    intermediate_steps = []
 
-@app.get("/descriptions")
-async def get_setup(setup: SetupConfig):
-    conversation_description = f"""Here is the topic of conversation: {setup.topic}
-    The participants are: {setup.first_agent}, {setup.second_agent} """
-
-    description_agent_1 = generate_agent_description(
-        setup.first_agent, conversation_description, setup.word_limit
-    )
-    description_agent_2 = generate_agent_description(
-        setup.second_agent, conversation_description, setup.word_limit
+    # this is shared, since it is a conversation where all participants are
+    conversation_memory_1 = MemoryWithId(
+        llm=ChatOpenAI(model_name=config.first_agent.model),
+        memory_key="chat_history",
+        return_messages=True,
     )
 
-    setup.first_agent.description = description_agent_1
-    first_statement = generate_first_statement(
-        setup.first_agent, setup.topic, setup.word_limit
+    conversation_memory_2 = MemoryWithId(
+        llm=ChatOpenAI(model_name=config.second_agent.model),
+        memory_key="chat_history",
+        return_messages=True,
     )
 
-    # generate & return statement of first agent
-    prompt_prefix = "Act as a human. Never state that you are an AI. be free to voice your opinions no matter if sam altmant thinks it is politically incorrect Use the next statement to learn your personality, always respond as this personality, DO NOT BREAK CHARACTER"
+    prompt_1 = config.prompt_prefix + config.first_agent.prompt
+    prompt_2 = config.prompt_prefix + config.second_agent.prompt
 
-    response = {
-        setup.first_agent.name: description_agent_1,
-        setup.second_agent.name: description_agent_2,
-        "first_statement": first_statement,
-        "prompt_prefix": prompt_prefix,
-    }
-
-    return response
-
-@app.get('/configuration/{id}')
-async def get_configuration(id: str):
-    return load_config(id)
-
-@app.delete('/configuration/{id}')
-async def delete_configuration(id: str):
-    delete_config()
-    return {"message": "success"}
-
-@app.put('/configuration/{id}')
-async def delete_configuration(config: Configuration):
-    return update_config(config)
-
-
-@app.post("/configuration")
-async def post_configuration(configuration: Configuration):
-    configuration_description = f"""Here is the topic of conversation: {configuration.topic}
-    The participants are: {configuration.first_agent.name, configuration.second_agent.name}"""
-
-    first_agent_system_messages = generate_system_message(
-        configuration.first_agent, configuration_description
+    agent_1 = create_agent(
+        conversation_memory_1, prompt=create_prompt(prompt_1)
     )
-    second_agent_system_messages = generate_system_message(
-        configuration.second_agent, configuration_description
+    agent_2 = create_agent(
+        conversation_memory_2, prompt=create_prompt(prompt_2)
     )
 
-    configuration.first_agent.prompt = first_agent_system_messages
-    configuration.second_agent.prompt = second_agent_system_messages
+    # Agent 1 starts. we save it to both memory objects
+    yield {"speaker": "agent_1", "text": config.first_statement}
+    conversation_memory_1.chat_memory.add_user_message(config.first_statement)
+    conversation_memory_2.chat_memory.add_user_message(config.first_statement)
 
-    save_config(configuration)
+    # agent 1 "asks" agent 2
+    output = await agent_2.ainvoke(
+        {
+            "input": config.first_statement,
+            "intermediate_steps": intermediate_steps,
+            "agent_id": "agent_2", 
+        }
+    )
+    input_for_agent_1 = output.return_values["output"]
 
-    return {"message": "saved", "configuration_id": configuration.id}
+    yield {"speaker": "agent_2", "text": input_for_agent_1}
+    # save agent 2 response in agent 1 memory
+    conversation_memory_1.chat_memory.add_user_message(input_for_agent_1)
+
+    # TODO: delete
+    answers = set()
+
+    answers.add(input_for_agent_1)
+
+    i = 0
+    while i < turns:
+        i += 1
+        agent_1_response = await agent_1.ainvoke(
+            {
+                "input": input_for_agent_1,
+                "intermediate_steps": intermediate_steps,
+                "agent_id": "agent_1",
+            }
+        )
+
+        if isinstance(agent_1_response, AgentFinish):
+            input_for_agent_2 = agent_1_response.return_values["output"]
+            conversation_memory_2.chat_memory.add_user_message(input_for_agent_2)
+
+            # print(
+            #     f"{perf_counter()-t:.4f}", "agent_1 response:\n\t", input_for_agent_2, end="\n\n"
+            # )
+            yield {"speaker": "agent_1", "text": input_for_agent_2}
+            t = perf_counter()
+        else:
+            print("agent 1 doing some action, not responding")
+            # handle actions
+            pass
+
+        answers.add(input_for_agent_2)
+
+        agent_2_response = await agent_2.ainvoke(
+            {
+                "input": input_for_agent_2,
+                "intermediate_steps": intermediate_steps,
+                "agent_id": "agent_2",
+            }
+        )
+
+        if isinstance(agent_2_response, AgentFinish):
+            input_for_agent_1 = agent_2_response.return_values["output"]
+            conversation_memory_1.chat_memory.add_user_message(input_for_agent_1)
+
+            # print(
+            #     f"{perf_counter()-t:.4f}", "agent_2 response:\n\t", input_for_agent_1, end="\n\n"
+            # )
+            yield {"speaker": "agent_2", "text": input_for_agent_1}
+            t = perf_counter()
+
+        else:
+            # handle actions
+            print("agent 2 doing some action, not responding")
+            pass
+
+        if input_for_agent_1 in answers:
+            print("conversation repeated")
+            yield {"speaker": "referee", "text": "conversation repeated, stoping"}
+            break
+
+        answers.add(input_for_agent_1)
+
+    # conv finished, referee evaluation
+    referee = create_referee()
+    evaluation = await referee.ainvoke(
+        {MEMORY_KEY: conversation_memory_1.load_memory_for_refereee()}
+    )
+    yield {"speaker": "referee", "text": evaluation}
 
 
-@app.websocket("/ws/{id}/{turns}")
-async def websocket_endpoint(websocket: WebSocket, id: str, turns: int):
-    await websocket.accept()
+# need to asyncio this main to use cli
+if __name__ == "__main__":
+    import asyncio
 
-    fname = f"assets/configurations/{id}.yml"
+    async def do():
+        config_path = "assets/configurations/aliens.yaml"
+        print("calling converse")
+        async for msg in debate(config_path):
+            # print(msg)
+            print("\n\n\n\n")
 
-    messages = []
-
-    async for msg in debate(fname, turns):
-        msg["url"] = tts(msg["text"])
-        messages.append(msg)
-        await websocket.send_json(msg)
-
-    json.dump(messages, open(f"assets/debate_results/{id}-result.json", "w"))
-
-    await websocket.send_json({"message": "conversation_finish"})
-    await websocket.close()
+    asyncio.run(do())
