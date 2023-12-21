@@ -1,7 +1,6 @@
 <script>
 	const energy_list = ['Assertive', 'Passive', 'Aggressive', 'Manipulative'];
 	export let selected = energy_list[0];
-	$: console.log(selected)
 </script>
 
 

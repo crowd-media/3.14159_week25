@@ -7,7 +7,6 @@
     import HairColor from './HairColor.svelte';
 
     export let player_info={
-        player_id:"",
         age:1,
         hair_color:"",
         energy:"",

@@ -8,7 +8,6 @@
 	import PlayerDescription from "./PlayerDescription.svelte";
 	
 	let player1_info={
-		player_id:"1",
         age:1,
 		hair_color:"",
         energy:"",
@@ -16,52 +15,91 @@
         aptitude:"",
         humor:""
     };
-	let player2_info={
-		player_id:"2",
-        age:1,
-		hair_color:"",
-        energy:"",
-        role: "",
-        aptitude:"",
-        humor:""
-    }
-	let json_post={
-		topic: "Baseball",
-		word_limit: 50,
+	let body_config={
+		topic:"",
+		word_limit:50,
 		first_agent:{
-			name: "Bori",
-			characteristics: ["age=14","hair=blond","mood=aggressive,emotional,hurting,boring"]
+			name: "",
+			characteristics:[]
 		},
 		second_agent:{
-			name: "Momo",
-			characteristics: ["age=4","hair=ginger","mood=calm,emotional,hurting,boring"]
+			name: "",
+			characteristics:[]
 		}
-    }
+
+
+	}
+	var raw = JSON.stringify({
+		"topic": "Who is the better one of us",
+		"word_limit": 50,
+		"first_agent": {
+			"name": "Juju",
+			"characteristics": [
+			"age = 27",
+			"humor=serious",
+			"mood=sweet,emotional,loving,hungry,perfect,analytic,open-minded"
+			]
+		},
+		"second_agent": {
+			"name": "Momo",
+			"characteristics": [
+			"age = 30",
+			"hair=brown",
+			"eyecolor=brown",
+			"mood=emotional, not balanced, hateful"
+			]
+		}
+		});
 
 	async function handleSubmit() {
-
-		JSON.stringify(json_post)
-		console.log(JSON.stringify([player1_info,player2_info]))
+		console.log(raw)
+		body_config.first_agent.name=player1_info.player_name
+		let characteristics= Object.keys(player1_info).map(key => `${key}=${player1_info[key]}`);
+		body_config.first_agent.characteristics = characteristics
+		
+		console.log(body_config)
+		const response = await fetch("http://localhost:8000/configuration/holi", {
+					"headers": {
+						"accept": "application/json",
+						"accept-language": "en-US,en;q=0.9",
+						"sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+						"sec-ch-ua-mobile": "?1",
+						"sec-ch-ua-platform": "\"Android\"",
+						"sec-fetch-dest": "empty",
+						"sec-fetch-mode": "cors",
+						"sec-fetch-site": "same-origin"
+					},
+					"referrer": "http://localhost:8000/docs",
+					"referrerPolicy": "strict-origin-when-cross-origin",
+					"body": null,
+					"method": "GET",
+					"mode": "cors",
+					"credentials": "omit"
+					});
+		console.log(response)
+		const respiri = await response.json()
+		
 	}
 
 </script>
 
 
 <section>
+	
+	<div class=topic>
+		<p>Write the topic: </p>
+		<input bind:value={body_config.topic} />
+	</div>
 	<h1>
 		<p>Configure your player personality</p>
 	</h1>
-	<form on:submit={handleSubmit}>
-
-	
-	<h1>
-		Player {player1_info.player_id}
-	</h1>
 	<PlayerDescription bind:player_info={player1_info}/>
+
 	<div class='button-submit'>
-		<input type="submit" name="submit" value="submit button" />
+		<button on:click={handleSubmit}>
+			Submit 
+		</button>
 	</div>
-	</form>
 	
 
 </section>
