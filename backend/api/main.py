@@ -79,14 +79,14 @@ async def save_configuration(configuration: Configuration):
     configuration.second_agent.prompt = second_agent_system_messages
 
 
-    fname = f"assets/configurations/{id}.yml"
+    fname = f"assets/configurations/{configuration.id}.yml"
 
     if os.path.isfile(fname):
         raise HTTPException(409, {"message": "already exists"})
 
     with open(fname, "w") as config_file:
         yaml.dump(configuration.model_dump(), config_file)
-    return {"message": "saved", "configuration_id": id}
+    return {"message": "saved", "configuration_id": configuration.id}
 
 
 @app.websocket("/ws/{id}/{turns}")
