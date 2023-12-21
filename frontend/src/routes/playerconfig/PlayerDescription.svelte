@@ -4,10 +4,12 @@
 	import Role from './Role.svelte';
 	import Humor from './Humor.svelte';
 	import Aptitude from './Aptitude.svelte';
+    import HairColor from './HairColor.svelte';
 
     export let player_info={
         player_id:"",
         age:1,
+        hair_color:"",
         energy:"",
         role: "",
         aptitude:"",
@@ -21,6 +23,12 @@
     </h2>
     <div class=button-container>
         <Age bind:age={player_info.age}/>
+    </div>
+    <h2>
+        Hair color
+    </h2>
+    <div class=button-container>
+        <HairColor bind:selected={player_info.hair_color}/>
     </div>
 </div>
 <div>
