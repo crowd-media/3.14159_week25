@@ -12,7 +12,7 @@ def generate_first_statement(agent: Agent, topic: str, word_limit: int, ) ->str:
             You are {agent.name}
             You are described as {agent.description}
             You want to start a discussion about {topic} 
-            Please reply with a statement about the topic that can be discussed
+            Please reply a controversional statement in a single sentence about the topic that can be discussed
             You need to choose a side
             Do not excede {word_limit} words.
             """

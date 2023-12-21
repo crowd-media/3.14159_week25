@@ -34,8 +34,8 @@ app = FastAPI(
 
 
 @app.get("/descriptions")
-async def topic(setup: SetupConfig):
-    conversation_description = f"""Here is the topic of conversation: {topic}
+async def get_setup(setup: SetupConfig):
+    conversation_description = f"""Here is the topic of conversation: {setup.topic}
     The participants are: {setup.first_agent}, {setup.second_agent} """
 
     description_agent_1 = generate_agent_description(
@@ -64,7 +64,7 @@ async def topic(setup: SetupConfig):
 
 
 @app.post("/save-configuration")
-async def topic(configuration: Configuration):
+async def save_configuration(configuration: Configuration):
     configuration_description = f"""Here is the topic of conversation: {configuration.topic}
     The participants are: {configuration.first_agent.name, configuration.second_agent.name}"""
 
@@ -78,23 +78,22 @@ async def topic(configuration: Configuration):
     configuration.first_agent.prompt = first_agent_system_messages
     configuration.second_agent.prompt = second_agent_system_messages
 
-    configuration_id = uuid4().__str__()
 
-    fname = f"assets/configurations/{configuration_id}.yml"
+    fname = f"assets/configurations/{id}.yml"
 
     if os.path.isfile(fname):
         raise HTTPException(409, {"message": "already exists"})
 
     with open(fname, "w") as config_file:
         yaml.dump(configuration.model_dump(), config_file)
-    return {"message": "saved", "configuration_id": configuration_id}
+    return {"message": "saved", "configuration_id": id}
 
 
-@app.websocket("/ws/{configuration_id}/{turns}")
-async def websocket_endpoint(websocket: WebSocket, configuration_id: str, turns: int):
+@app.websocket("/ws/{id}/{turns}")
+async def websocket_endpoint(websocket: WebSocket, id: str, turns: int):
     await websocket.accept()
 
-    fname = f"assets/configurations/{configuration_id}.yml"
+    fname = f"assets/configurations/{id}.yml"
 
     messages = []
 
@@ -103,8 +102,7 @@ async def websocket_endpoint(websocket: WebSocket, configuration_id: str, turns:
         messages.append(msg)
         await websocket.send_json(msg)
 
-    conv_id = uuid4().__str__()
-    json.dump(messages, open(f"assets/debate_results/{conv_id}.json", "w"))
+    json.dump(messages, open(f"assets/debate_results/{id}-result.json", "w"))
 
-    await websocket.send_json({"message": "conversation_finish", "id": conv_id})
+    await websocket.send_json({"message": "conversation_finish"})
     await websocket.close()

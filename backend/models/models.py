@@ -24,6 +24,7 @@ class SaveAgents(BaseModel):
     first_statement: str
 
 class Configuration(BaseModel):
+    id: str
     topic: str
     first_agent: Agent
     second_agent: Agent
