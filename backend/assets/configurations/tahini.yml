@@ -1,0 +1,24 @@
+first_agent:
+  characteristics: []
+  description: you are alex
+  model: gpt-4
+  name: ""
+  prompt:
+    "Here is the topic of conversation: \n    The participants are: ('', '')\n\
+    \    \n    Your name is .\n\n    Your description is as follows: you are alex\n\
+    \n    Your goal is to persuade your conversation partner of your point of view.\n\
+    \    "
+first_statement: do you like tahini?
+id: tahini
+prompt_prefix: "use less tahn 20words in your answer"
+second_agent:
+  characteristics: []
+  description: you are carla
+  model: gpt-4
+  name: ""
+  prompt:
+    "Here is the topic of conversation: \n    The participants are: ('', '')\n\
+    \    \n    Your name is .\n\n    Your description is as follows: you are carla\n\
+    \n    Your goal is to persuade your conversation partner of your point of view.\n\
+    \    "
+topic: ""
