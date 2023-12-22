@@ -57,6 +57,7 @@
 
 <style>
 	.conv-finished {
+		margin: 20px;
 		align-self: center;
 		text-align: center;
 	}
@@ -116,6 +117,7 @@
 	}
 
 	.agent_1 {
+		text-align: left;
 		background-color: rgba(24, 138, 141, 1);
 		color: white;
 		align-self: flex-start;
@@ -123,6 +125,7 @@
 	}
 
 	.agent_2 {
+		text-align: right;
 		background-color: hsl(0, 0%, 43%);
 		align-self: flex-end;
 		color: white;

@@ -1,13 +1,12 @@
 <script>
-	export let options = [""];
+	export let options = [''];
 	export let selected = options[0];
 </script>
 
 <div class="button-container">
 	{#each options as option}
-		<button
-			class:selected={selected === option}
-			on:click={() => (selected = option)}>{option}</button
+		<button class:selected={selected === option} on:click={() => (selected = option)}
+			>{option}</button
 		>
 	{/each}
 </div>

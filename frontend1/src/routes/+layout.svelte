@@ -1,24 +1,18 @@
 <script>
-	import { goto } from "$app/navigation";
-	import { page } from "$app/stores";
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 </script>
 
 <main>
 	<div class="header">
 		<div class="botton_prompt">
-			<button
-				class:selected={$page.route.id == "/configure"}
-				on:click={() => goto("configure")}
-			>
+			<button class:selected={$page.route.id == '/configure'} on:click={() => goto('configure')}>
 				Configure
 			</button>
 		</div>
 		<vline />
 		<div class="botton_conversation">
-			<button
-				class:selected={$page.route.id == "/play"}
-				on:click={() => goto("play")}
-			>
+			<button class:selected={$page.route.id == '/play'} on:click={() => goto('play')}>
 				Converse
 			</button>
 		</div>
