@@ -1,6 +1,6 @@
 <script>
 	let socket;
-	let conversation_id = 'ai_uprising';
+	let conversation_id = '';
 	/**
 	 * @type {any[]}
 	 */

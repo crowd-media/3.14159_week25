@@ -1,18 +1,29 @@
 <script>
-	import { goto } from '$app/navigation';
+	import { goto } from "$app/navigation";
+	import { page } from "$app/stores";
 </script>
 
 <main>
-	<h1>El Debate</h1>
-
 	<div class="header">
 		<div class="botton_prompt">
-			<button on:click={() => goto('configure')}> CONFIGURE </button>
+			<button
+				class:selected={$page.route.id == "/configure"}
+				on:click={() => goto("configure")}
+			>
+				Configure
+			</button>
 		</div>
+		<vline />
 		<div class="botton_conversation">
-			<button on:click={() => goto('play')}> PLAY CONVERSATION </button>
+			<button
+				class:selected={$page.route.id == "/play"}
+				on:click={() => goto("play")}
+			>
+				Converse
+			</button>
 		</div>
 	</div>
+	<h1>El Debate</h1>
 	<slot />
 </main>
 
@@ -23,7 +34,8 @@
 	main {
 		font-family: sans-serif;
 		text-align: center;
-		margin: 40px auto;
+		margin: 0px;
+		overflow: hidden;
 	}
 	.header {
 		text-align: center;
@@ -32,17 +44,22 @@
 			-6px -6px 10px #fff;
 		padding: 10px;
 		box-sizing: border-box;
-		border-radius: 20px;
+		border-radius: 0px 0px 20px 20px;
 		display: flex;
 		flex-direction: row;
 		justify-content: space-evenly;
-		margin: 20px;
+		max-width: 300px;
+		/* // align center */
+		margin: 0px auto;
 	}
 	button {
 		font-size: 20px;
-	}
-	button:hover {
+		background-color: transparent;
+		border: none;
 		cursor: pointer;
+	}
+
+	.selected {
 		color: rgba(24, 138, 141, 1);
 	}
 </style>

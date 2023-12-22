@@ -27,10 +27,11 @@
 		display: flex;
 		flex-direction: column;
 		padding: 1rem;
-		width: 100%;
+		width: 100vw;
 		max-width: 64rem;
-		margin: 0 auto;
+		margin: 0;
 		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	footer {
