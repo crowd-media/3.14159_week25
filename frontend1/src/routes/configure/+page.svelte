@@ -70,7 +70,7 @@
 
 		console.log(body_config);
 		try {
-			const response = await fetch('http://127.0.0.1:8000/descriptions', {
+			const response = await fetch('http://34.250.204.68:8000/descriptions', {
 				headers: {
 					'Content-Type': 'application/json'
 				},
@@ -118,7 +118,7 @@
 		// body_config.first_agent.characteristics = characteristics
 
 		console.log(body_config);
-		const response = await fetch('http://127.0.0.1:8000/configuration', {
+		const response = await fetch('http://34.250.204.68:8000/configuration', {
 			headers: {
 				'Content-Type': 'application/json'
 			},

@@ -58,7 +58,7 @@
 		body_config.first_agent.characteristics = characteristics
 		
 		console.log(body_config)
-		const response = await fetch("http://localhost:8000/configuration/holi", {
+		const response = await fetch("http://34.250.204.68:8000/configuration/holi", {
 					"headers": {
 						"accept": "application/json",
 						"accept-language": "en-US,en;q=0.9",
@@ -69,7 +69,7 @@
 						"sec-fetch-mode": "cors",
 						"sec-fetch-site": "same-origin"
 					},
-					"referrer": "http://localhost:8000/docs",
+					"referrer": "http://34.250.204.68:8000/docs",
 					"referrerPolicy": "strict-origin-when-cross-origin",
 					"body": null,
 					"method": "GET",

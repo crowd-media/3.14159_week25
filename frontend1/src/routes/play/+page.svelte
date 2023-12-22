@@ -8,9 +8,12 @@
 	const addToArray = (/** @type {{ time: Date; data: any; }} */ message) => {
 		messagesFromServer = [...messagesFromServer, message];
 	};
+
+	let ws_connected = false;
 	const handlePlay = async () => {
 		// Here we recieve a callback whenever new data is pushed into the store
-		socket = new WebSocket(`ws://127.0.0.1:8000/ws/${conversation_id}/5`);
+		socket = new WebSocket(`ws://34.250.204.68:8000/ws/${conversation_id}/5`);
+		ws_connected = true;
 		messagesFromServer = [];
 		socket.addEventListener('open', () => {
 			console.log('Opened');
@@ -19,6 +22,7 @@
 			console.log(event.data);
 			addToArray({ time: new Date(), data: JSON.parse(event.data) }); // When the server respons with a message we save it in an array
 		});
+		socket.addEventListener('close', () => (ws_connected = false));
 	};
 
 	$: console.log({ messagesFromServer });
@@ -29,7 +33,7 @@
 		<label class="justify-flex-column">
 			<span>Write your conversation ID</span>
 			<input class="conversation-id" bind:value={conversation_id} placeholder="Conversation ID" />
-			<button class="conversation-id" on:click={handlePlay}>Play</button>
+			<button class="conversation-id" on:click={handlePlay} disabled={ws_connected}>Play</button>
 		</label>
 
 		{#each messagesFromServer as message}
@@ -82,6 +86,10 @@
 
 	button {
 		font-size: 17px;
+	}
+
+	button:disabled {
+		opacity: 0.5;
 	}
 
 	button:hover {
