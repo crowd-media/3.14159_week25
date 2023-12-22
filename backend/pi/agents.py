@@ -172,6 +172,8 @@ def create_referee() -> RunnableSequence:
                 "system",
                 """Consider this conversation, and decide who won. Explain your reasoning.
     Each message has attached an agent_id. take care of who is saying that, do not confuse them.
+    You need to choose a side, you cannot say "It's difficult to determine a clear winner in this conversation".
+    You have to say "The winner is" one side or the other and explain the reason.
     """,
             ),
             # idk
